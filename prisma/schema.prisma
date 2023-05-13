@@ -1,18 +1,81 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
     provider = "prisma-client-js"
-    previewFeatures = ["jsonProtocol"]
 }
 
 datasource db {
-    provider = "sqlite"
-    url      = env("DATABASE_URL")
+    provider     = "mysql"
+    url          = env("DATABASE_URL")
+    relationMode = "prisma"
 }
 
 model Example {
     id        String   @id @default(cuid())
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+}
+
+enum Status {
+    deleted
+    draft
+    sent
+    paid
+    canceled
+}
+
+model Services {
+    id        String   @id @default(cuid())
+    name      String
+    price     Int
+    Invoice   Invoice? @relation(fields: [invoiceId], references: [id])
+    invoiceId String?
+
+    parentId String?
+    parent   Services?  @relation(name: "childServices", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    children Services[] @relation(name: "childServices")
+
+    @@index([invoiceId], name: "invoiceId")
+    @@index([parentId], name: "parentId")
+}
+
+model Invoice {
+    id        String              @id @default(cuid())
+    status    Status              @default(draft)
+    services  Services[]
+    total     Int
+    dueDate   DateTime
+    customers CustomersInvoices[]
+
+    @@index([status], name: "status")
+    @@index([dueDate], name: "dueDate")
+    @@index([id, status], name: "id_status")
+}
+
+model Customer {
+    id            String              @id @default(cuid())
+    name          String
+    email         String
+    emailVerified Boolean             @default(false)
+    phone         String              @default("")
+    address       String              @default("")
+    city          String              @default("")
+    state         String              @default("")
+    zip           String              @default("")
+    country       String              @default("")
+    createdAt     DateTime            @default(now())
+    updatedAt     DateTime            @updatedAt
+    invoices      CustomersInvoices[]
+}
+
+model CustomersInvoices {
+    // id         String    @id @default(cuid())
+    customerId String
+    customer   Customer? @relation(fields: [customerId], references: [id])
+    invoiceId  String
+    invoice    Invoice?  @relation(fields: [invoiceId], references: [id])
+
+    @@id([customerId, invoiceId])
+    @@index([customerId], name: "customerId")
+    @@index([invoiceId], name: "invoiceId")
 }

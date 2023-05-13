@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+input, select {
+  @apply rounded-md border border-gray-300 shadow-sm;
+}
+
+input:focus {
+  @apply focus:border-indigo-500 focus:ring-indigo-500;
+}
+
+input[type="checkbox"] {
+  @apply rounded;
+}
+
+input[type="radio"] {
+  @apply rounded;
+}
+
+button {
+  @apply rounded-md font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
