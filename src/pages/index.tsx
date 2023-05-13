@@ -1,3 +1,4 @@
+import { UserButton } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { type NextPage } from "next";
 import Head from "next/head";
@@ -5,6 +6,7 @@ import Link from "next/link";
 import { use, useState } from "react";
 import { util, z } from "zod";
 import type { RouterInputs, RouterOutputs } from "~/utils/api";
+
 
 import { api } from "~/utils/api";
 
@@ -317,6 +319,8 @@ const Home: NextPage = () => {
 
           <pre className="mt-16">{JSON.stringify(ctx, null, 2)}</pre>
         </div>
+
+        <UserButton />
       </main>
     </>
   );
