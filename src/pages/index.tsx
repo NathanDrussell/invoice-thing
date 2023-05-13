@@ -38,6 +38,11 @@ const Home: NextPage = () => {
   const createService = api.example.createService.useMutation();
   const createInvoice = api.example.createInvoice.useMutation();
   const createCustomer = api.example.createCustomer.useMutation();
+  const sendInvoice = api.example.sendInvoice.useMutation();
+  const payInvoice = api.example.payInvoice.useMutation();
+  const cancelInvoice = api.example.cancelInvoice.useMutation();
+  const deleteInvoice = api.example.deleteInvoice.useMutation();
+
   const addCustomerToInvoice = api.example.addCustomerToInvoice.useMutation();
   const [name, setName] = useState("");
   const [price, setPrice] = useState<number>(0);
@@ -105,12 +110,54 @@ const Home: NextPage = () => {
 
   const handleAddCustomerToInvoice = async () => {
     console.log({ customerId, invoiceId });
-    await addCustomerToInvoice.mutateAsync({
-      customerId,
-      invoiceId,
-    }).then(() => {
-      invoices.refetch();
-    });
+    await addCustomerToInvoice
+      .mutateAsync({
+        customerId,
+        invoiceId,
+      })
+      .then(() => {
+        invoices.refetch();
+      });
+  };
+
+  const handleSendInvoice = async () => {
+    await sendInvoice
+      .mutateAsync({
+        invoiceId,
+      })
+      .then(() => {
+        invoices.refetch();
+      });
+  };
+
+  const handlePayInvoice = async () => {
+    await payInvoice
+      .mutateAsync({
+        invoiceId,
+      })
+      .then(() => {
+        invoices.refetch();
+      });
+  };
+
+  const handleCancelInvoice = async () => {
+    await cancelInvoice
+      .mutateAsync({
+        invoiceId,
+      })
+      .then(() => {
+        invoices.refetch();
+      });
+  };
+
+  const handleDeleteInvoice = async () => {
+    await deleteInvoice
+      .mutateAsync({
+        invoiceId,
+      })
+      .then(() => {
+        invoices.refetch();
+      });
   };
 
   const ctx = {
@@ -171,7 +218,6 @@ const Home: NextPage = () => {
             type="number"
           />
 
-          <button onClick={handleCreateService}>Add service</button>
           <button onClick={addChild}>Add child</button>
 
           <ul>
@@ -180,7 +226,10 @@ const Home: NextPage = () => {
                 {c.name} {c.price}
               </li>
             ))}
+            {!children.length && <li>No children</li>}
           </ul>
+
+          <button onClick={handleCreateService}>Add service</button>
 
           <select
             name=""
@@ -260,6 +309,11 @@ const Home: NextPage = () => {
           <button onClick={handleAddCustomerToInvoice}>
             Add customer to invoice
           </button>
+
+          <button onClick={handleSendInvoice}>Send invoice</button>
+          <button onClick={handlePayInvoice}>Pay invoice</button>
+          <button onClick={handleCancelInvoice}>Cancel invoice</button>
+          <button onClick={handleDeleteInvoice}>Delete invoice</button>
 
           <pre className="mt-16">{JSON.stringify(ctx, null, 2)}</pre>
         </div>

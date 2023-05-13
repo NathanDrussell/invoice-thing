@@ -84,6 +84,7 @@ export const exampleRouter = createTRPCRouter({
 
   invoices: publicProcedure.query(({ ctx }) => {
     return ctx.prisma.invoice.findMany({
+      where: { status: { not: "deleted" } },
       include: {
         services: true,
         customers: true,
@@ -179,8 +180,8 @@ export const exampleRouter = createTRPCRouter({
       })
     )
     .mutation(({ input, ctx }) => {
-      return ctx.prisma.invoice.update({
-        where: { id: input.invoiceId },
+      return ctx.prisma.invoice.updateMany({
+        where: { id: input.invoiceId, status: "draft" },
         data: { status: "deleted" },
       });
     }),
@@ -192,8 +193,8 @@ export const exampleRouter = createTRPCRouter({
       })
     )
     .mutation(({ input, ctx }) => {
-      return ctx.prisma.invoice.update({
-        where: { id: input.invoiceId },
+      return ctx.prisma.invoice.updateMany({
+        where: { id: input.invoiceId, status: "sent" },
         data: { status: "draft" },
       });
     }),
