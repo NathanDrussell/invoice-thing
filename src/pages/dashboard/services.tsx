@@ -1,15 +1,16 @@
 import { UserButton } from "@clerk/nextjs";
+import { Combobox } from "@headlessui/react";
 import { atom, useAtom } from "jotai";
 import { NextPage } from "next";
-import React, { Children, useEffect } from "react";
-import { Button, Input, Modal, Textarea } from "~/components/base";
+import React, { Children, Fragment, useEffect, useRef, useState } from "react";
+import { Badge, Button, Input, Modal, Textarea, inputClassName } from "~/components/base";
 import {
   Dashboard,
   TheDashboardSidebar,
   useDashboardState,
   useSetDashboardTitle,
 } from "~/layouts/Dashboard";
-import { RouterInputs, api } from "~/utils/api";
+import { RouterInputs, RouterOutputs, api } from "~/utils/api";
 import { cn } from "~/utils/cn";
 import { Icons } from "~/utils/icons";
 
@@ -19,6 +20,82 @@ export const useServiceActions = () => {
   return {
     create,
   };
+};
+
+export const ServicesAutocomplete = ({
+  onSelect,
+}: {
+  onSelect: (id: string) => void;
+}) => {
+  const lastSelectedService = useRef<string>("");
+  const [selectedService, setSelectedService] = useState<string | Symbol>("");
+  const [query, setQuery] = useState("");
+
+  const { data: services } = api.service.ac.useQuery(
+    { query },
+    {
+      enabled: query.length >= 0,
+    }
+  );
+
+  useEffect(() => {
+    if (!selectedService) return;
+    if (selectedService === Symbol.for("new")) {
+      // open modal
+    } else {
+      if (selectedService !== lastSelectedService.current) {
+        lastSelectedService.current = selectedService as string;
+        onSelect(selectedService as string);
+        setSelectedService("");
+      }
+    }
+  }, [selectedService]);
+
+  return (
+    <Combobox
+      value={selectedService}
+      onChange={setSelectedService}
+      as={"div"}
+      className="relative"
+    >
+      <Combobox.Input
+        placeholder="Add a service..."
+        className={inputClassName}
+        onChange={(event) => setQuery(event.target.value)}
+        displayValue={(value: RouterOutputs["service"]["ac"][0]) => value.name}
+      />
+      <Combobox.Options className="absolute top-full z-50 mt-2 w-full rounded  border bg-white shadow-lg">
+        {services?.map((service) => (
+          <Combobox.Option key={service.id} value={service.id} as={Fragment}>
+            {({ active, selected }) => (
+              <li
+                className={cn(
+                  "flex w-full items-center gap-2 p-2 capitalize",
+                  active ? "bg-slate-100" : ""
+                )}
+              >
+                {selected ? <Icons.Check /> : null}
+                <Badge>
+                  {service.price.toLocaleString("en-US", {
+                    style: "currency",
+                    currency: "CAD",
+                    //   compactDisplay: "short",
+                    currencyDisplay: "symbol",
+                  })}
+                </Badge>
+                {service.name}
+              </li>
+            )}
+          </Combobox.Option>
+        ))}
+        {services?.length === 0 && (
+          <Combobox.Option value={Symbol.for("new")} className="w-full p-2">
+            Add a new service
+          </Combobox.Option>
+        )}
+      </Combobox.Options>
+    </Combobox>
+  );
 };
 
 type CreateService = RouterInputs["service"]["create"];

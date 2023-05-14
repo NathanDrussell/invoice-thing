@@ -1,17 +1,24 @@
-import { UserButton } from "@clerk/nextjs";
-import { atom, useAtom } from "jotai";
+import { Combobox } from "@headlessui/react";
 import { NextPage } from "next";
-import React, { Children, useEffect } from "react";
-import { Button, Input, Modal, Textarea } from "~/components/base";
+import React, { Fragment, useEffect, useRef, useState } from "react";
+import {
+  Button,
+  Input,
+  Modal,
+  inputClassName
+} from "~/components/base";
 import {
   Dashboard,
   TheDashboardSidebar,
   useDashboardState,
   useSetDashboardTitle,
 } from "~/layouts/Dashboard";
-import { RouterInputs, api } from "~/utils/api";
+import { RouterInputs, RouterOutputs, api } from "~/utils/api";
 import { cn } from "~/utils/cn";
+import { useSeededHslColor } from "~/utils/hsl";
 import { Icons } from "~/utils/icons";
+
+type CreateCustomer = RouterInputs["customer"]["create"];
 
 export const useCustomerActions = () => {
   const create = api.customer.create.useMutation();
@@ -22,7 +29,7 @@ export const useCustomerActions = () => {
     addToInvoice,
   };
 };
-type CreateCustomer = RouterInputs["customer"]["create"];
+const useCustomers = () => api.customer.list.useQuery(undefined);
 
 export const NewCustomerModals: React.FC<{}> = ({}) => {
   const [, setDashboardState] = useDashboardState();
@@ -72,20 +79,72 @@ export const NewCustomerModals: React.FC<{}> = ({}) => {
   );
 };
 
-const useCustomers = () => api.customer.list.useQuery(undefined);
+export const CustomersAutocomplete = ({
+  onSelect,
+}: {
+  onSelect: (id: string) => void;
+}) => {
+  const lastSelectedService = useRef<string>("");
+  const [selectedCustomer, setSelectedCustomer] = useState<string | Symbol>("");
+  const [query, setQuery] = useState("");
 
-const useSeededHslColor = (seed: string, l = "20%") => {
-  const hsl = React.useMemo(() => {
-    let hash = 0;
-    for (var i = 0; i < seed.length; i++) {
-      hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+  const { data: customers } = api.customer.ac.useQuery(
+    { query },
+    {
+      enabled: query.length >= 0,
     }
+  );
 
-    let h = hash % 360;
-    return `hsl(${h}, 100%, ${l})`; //"hsl(" + h + ", " + s + "%, " + l + "%)";
-  }, [seed]);
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    if (selectedCustomer === Symbol.for("new")) {
+      // open modal
+    } else {
+      if (selectedCustomer !== lastSelectedService.current) {
+        lastSelectedService.current = selectedCustomer as string;
+        onSelect(selectedCustomer as string);
+        setSelectedCustomer("");
+      }
+    }
+  }, [selectedCustomer]);
 
-  return hsl;
+  return (
+    <Combobox
+      value={selectedCustomer}
+      onChange={setSelectedCustomer}
+      as={"div"}
+      className="relative"
+    >
+      <Combobox.Input
+        placeholder="Add a customer..."
+        className={inputClassName}
+        onChange={(event) => setQuery(event.target.value)}
+        displayValue={(value: RouterOutputs["service"]["ac"][0]) => value.name}
+      />
+      <Combobox.Options className="absolute top-full z-50 mt-2 w-full rounded  border bg-white shadow-lg">
+        {customers?.map((service) => (
+          <Combobox.Option key={service.id} value={service.id} as={Fragment}>
+            {({ active, selected }) => (
+              <li
+                className={cn(
+                  "flex w-full items-center gap-2 p-2 capitalize",
+                  active ? "bg-slate-100" : ""
+                )}
+              >
+                {selected ? <Icons.Check /> : null}
+                {service.name}
+              </li>
+            )}
+          </Combobox.Option>
+        ))}
+        {customers?.length === 0 && (
+          <Combobox.Option value={Symbol.for("new")} className="w-full p-2">
+            Add a new service
+          </Combobox.Option>
+        )}
+      </Combobox.Options>
+    </Combobox>
+  );
 };
 
 export const CustomerAvatar: React.FC<{ name: string }> = ({ name }) => {
@@ -111,10 +170,6 @@ const Customers: NextPage = () => {
   const { data: customers } = useCustomers();
   const [, setDashboardState] = useDashboardState();
   useSetDashboardTitle("Customers");
-
-  //   useEffect(() => {
-  //     setDashboardState((state) => ({ ...state, title: "Customers" }));
-  //   }, []);
 
   const openModal = () => {
     setDashboardState((state) => ({

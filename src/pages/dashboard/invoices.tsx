@@ -1,22 +1,13 @@
-import { UserButton } from "@clerk/nextjs";
-import { Combobox } from "@headlessui/react";
 import { formatRelative } from "date-fns";
 import { atom, useAtom } from "jotai";
 import { NextPage } from "next";
-import React, {
-  Children,
-  Fragment,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React from "react";
 import {
+  Badge,
   Button,
+  Color,
   Input,
-  Modal,
-  Textarea,
-  inputClassName,
+  Modal
 } from "~/components/base";
 import {
   Dashboard,
@@ -25,34 +16,19 @@ import {
   useSetDashboardTitle,
 } from "~/layouts/Dashboard";
 import { RouterInputs, RouterOutputs, api } from "~/utils/api";
-import { cn } from "~/utils/cn";
 import { Icons } from "~/utils/icons";
-import { CustomerAvatar } from "./customers";
+import { CustomerAvatar, CustomersAutocomplete } from "./customers";
+import { ServicesAutocomplete } from "./services";
 
-export const useInvoiceActions = () => {
-  const create = api.invoice.create.useMutation();
-  const send = api.invoice.send.useMutation();
-  const pay = api.invoice.pay.useMutation();
-  const cancel = api.invoice.cancel.useMutation();
-  const del = api.invoice.delete.useMutation();
-
-  return {
-    create,
-    send,
-    pay,
-    cancel,
-    delete: del,
-  };
-};
 type CreateInvoice = RouterInputs["invoice"]["create"];
 type Invoice = RouterOutputs["invoice"]["list"][0];
 
-const servicePageState = atom({
+const invoicePageState = atom({
   selectedIds: [] as string[],
 });
 
-const useServicePageState = () => {
-  const [pageState, setPageState] = useAtom(servicePageState);
+const useInvoicePageState = () => {
+  const [pageState, setPageState] = useAtom(invoicePageState);
 
   return {
     selectedIds: pageState.selectedIds,
@@ -77,203 +53,22 @@ const useServicePageState = () => {
   };
 };
 
-// export const ServicesAutocomplete = ({}) => {
-//   const [query, setQuery] = React.useState<string>("");
+const useInvoices = () => api.invoice.list.useQuery(undefined);
 
-//   return (
-//     <div className="relative">
-//       <Input
-//         label=""
-//         value={query}
-//         onChange={(e) => setQuery(e.target.value)}
-//         placeholder="Add a service..."
-//       ></Input>
+export const useInvoiceActions = () => {
+  const create = api.invoice.create.useMutation();
+  const send = api.invoice.send.useMutation();
+  const pay = api.invoice.pay.useMutation();
+  const cancel = api.invoice.cancel.useMutation();
+  const del = api.invoice.delete.useMutation();
 
-//       <div className="absolute top-full  w-full  rounded bg-white p-2 shadow">
-//         {services?.map((service) => (
-//           <div className="flex items-center gap-2 p-2">
-//             {service.name}{" "}
-//             {service.price.toLocaleString("en-US", {
-//               style: "currency",
-//               currency: "CAD",
-//               //   compactDisplay: "short",
-//               currencyDisplay: "symbol",
-//             })}
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
-
-export const ServicesAutocomplete = ({
-  onSelect,
-}: {
-  onSelect: (id: string) => void;
-}) => {
-  const lastSelectedService = useRef<string>("");
-  const [selectedService, setSelectedService] = useState<string | Symbol>("");
-  const [query, setQuery] = useState("");
-
-  const { data: services } = api.service.ac.useQuery(
-    { query },
-    {
-      enabled: query.length >= 0,
-    }
-  );
-
-  useEffect(() => {
-    if (!selectedService) return;
-    if (selectedService === Symbol.for("new")) {
-      // open modal
-    } else {
-      if (selectedService !== lastSelectedService.current) {
-        lastSelectedService.current = selectedService as string;
-        onSelect(selectedService as string);
-        setSelectedService("");
-      }
-    }
-  }, [selectedService]);
-
-  return (
-    <Combobox
-      value={selectedService}
-      onChange={setSelectedService}
-      as={"div"}
-      className="relative"
-    >
-      <Combobox.Input
-        placeholder="Add a service..."
-        className={inputClassName}
-        onChange={(event) => setQuery(event.target.value)}
-        displayValue={(value: RouterOutputs["service"]["ac"][0]) => value.name}
-      />
-      <Combobox.Options className="absolute top-full z-50 mt-2 w-full rounded  border bg-white shadow-lg">
-        {services?.map((service) => (
-          <Combobox.Option key={service.id} value={service.id} as={Fragment}>
-            {({ active, selected }) => (
-              <li
-                className={cn(
-                  "flex w-full items-center gap-2 p-2 capitalize",
-                  active ? "bg-slate-100" : ""
-                )}
-              >
-                {selected ? <Icons.Check /> : null}
-                <Badge>
-                  {service.price.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: "CAD",
-                    //   compactDisplay: "short",
-                    currencyDisplay: "symbol",
-                  })}
-                </Badge>
-                {service.name}
-              </li>
-            )}
-          </Combobox.Option>
-        ))}
-        {services?.length === 0 && (
-          <Combobox.Option value={Symbol.for("new")} className="w-full p-2">
-            Add a new service
-          </Combobox.Option>
-        )}
-      </Combobox.Options>
-    </Combobox>
-  );
-};
-
-export const CustomersAutocomplete = ({
-  onSelect,
-}: {
-  onSelect: (id: string) => void;
-}) => {
-  const lastSelectedService = useRef<string>("");
-  const [selectedCustomer, setSelectedCustomer] = useState<string | Symbol>("");
-  const [query, setQuery] = useState("");
-
-  const { data: customers } = api.customer.ac.useQuery(
-    { query },
-    {
-      enabled: query.length >= 0,
-    }
-  );
-
-  useEffect(() => {
-    if (!selectedCustomer) return;
-    if (selectedCustomer === Symbol.for("new")) {
-      // open modal
-    } else {
-      if (selectedCustomer !== lastSelectedService.current) {
-        lastSelectedService.current = selectedCustomer as string;
-        onSelect(selectedCustomer as string);
-        setSelectedCustomer("");
-      }
-    }
-  }, [selectedCustomer]);
-
-  return (
-    <Combobox
-      value={selectedCustomer}
-      onChange={setSelectedCustomer}
-      as={"div"}
-      className="relative"
-    >
-      <Combobox.Input
-        placeholder="Add a customer..."
-        className={inputClassName}
-        onChange={(event) => setQuery(event.target.value)}
-        displayValue={(value: RouterOutputs["service"]["ac"][0]) => value.name}
-      />
-      <Combobox.Options className="absolute top-full z-50 mt-2 w-full rounded  border bg-white shadow-lg">
-        {customers?.map((service) => (
-          <Combobox.Option key={service.id} value={service.id} as={Fragment}>
-            {({ active, selected }) => (
-              <li
-                className={cn(
-                  "flex w-full items-center gap-2 p-2 capitalize",
-                  active ? "bg-slate-100" : ""
-                )}
-              >
-                {selected ? <Icons.Check /> : null}
-                {service.name}
-              </li>
-            )}
-          </Combobox.Option>
-        ))}
-        {customers?.length === 0 && (
-          <Combobox.Option value={Symbol.for("new")} className="w-full p-2">
-            Add a new service
-          </Combobox.Option>
-        )}
-      </Combobox.Options>
-    </Combobox>
-  );
-};
-
-const colorClasses = {
-  gray: "bg-gray-50 text-gray-800 ring-gray-600/20",
-  red: "bg-red-50 text-red-800 ring-red-600/20",
-  yellow: "bg-yellow-50 text-yellow-800 ring-yellow-600/20",
-  green: "bg-green-50 text-green-800 ring-green-600/20",
-  blue: "bg-blue-50 text-blue-800 ring-blue-600/20",
-  indigo: "bg-indigo-50 text-indigo-800 ring-indigo-600/20",
-  purple: "bg-purple-50 text-purple-800 ring-purple-600/20",
-  pink: "bg-pink-50 text-pink-800 ring-pink-600/20",
-} as const;
-const Badge: React.FC<{
-  children: React.ReactNode;
-  color?: keyof typeof colorClasses;
-}> = ({ color = "yellow", children }) => {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset",
-        colorClasses[color]
-      )}
-    >
-      {children}
-    </span>
-  );
+  return {
+    create,
+    send,
+    pay,
+    cancel,
+    delete: del,
+  };
 };
 
 export const NewInvoiceModal: React.FC<{}> = ({}) => {
@@ -353,14 +148,12 @@ export const NewInvoiceModal: React.FC<{}> = ({}) => {
   );
 };
 
-const useInvoices = () => api.invoice.list.useQuery(undefined);
-
 const Invoices: NextPage = () => {
   const { data: invoices } = useInvoices();
   const [, setDashboardState] = useDashboardState();
   const invoiceActions = useInvoiceActions();
   useSetDashboardTitle("Invoices");
-  const ps = useServicePageState();
+  const ps = useInvoicePageState();
 
   //   useEffect(() => {
   //     setDashboardState((state) => ({ ...state, title: "Invoices" }));
@@ -414,7 +207,7 @@ const Invoices: NextPage = () => {
             paid: "green",
             canceled: "red",
             deleted: "red",
-          } as Record<(typeof invoice)["status"], keyof typeof colorClasses>;
+          } as Record<Invoice["status"], Color>;
 
           return (
             <div onClick={() => ps.toggle(invoice.id)}>
