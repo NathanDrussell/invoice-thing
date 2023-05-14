@@ -25,11 +25,12 @@ enum Status {
 }
 
 model Services {
-    id        String   @id @default(cuid())
-    name      String
-    price     Int
-    Invoice   Invoice? @relation(fields: [invoiceId], references: [id])
-    invoiceId String?
+    id          String   @id @default(cuid())
+    name        String
+    description String   @default("")
+    price       Int
+    Invoice     Invoice? @relation(fields: [invoiceId], references: [id])
+    invoiceId   String?
 
     parentId String?
     parent   Services?  @relation(name: "childServices", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)

@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^4.17.3",
+    "@headlessui/react": "^1.7.14",
+    "@phosphor-icons/react": "^2.0.9",
     "@prisma/client": "^4.11.0",
     "@t3-oss/env-nextjs": "^0.2.1",
     "@tanstack/react-query": "^4.28.0",
@@ -18,6 +20,8 @@
     "@trpc/next": "^10.18.0",
     "@trpc/react-query": "^10.18.0",
     "@trpc/server": "^10.18.0",
+    "date-fns": "^2.30.0",
+    "jotai": "^2.1.0",
     "next": "^13.4.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",

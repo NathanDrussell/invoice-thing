@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-input, select {
+/* input, select {
   @apply rounded-md border border-gray-300 shadow-sm;
 }
 
@@ -20,4 +20,4 @@ input[type="radio"] {
 
 button {
   @apply rounded-md font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 p-2 bg-blue-800 text-white mb-2;
-}
+} */

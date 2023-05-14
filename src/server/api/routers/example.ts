@@ -8,6 +8,16 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 
+const _createServiceSchema = z.object({
+  name: z.string().trim(),
+  description: z.string().trim(),
+  price: z.number().positive(),
+});
+
+const createServiceSchema = _createServiceSchema.extend({
+  children: z.array(_createServiceSchema),
+});
+
 export const exampleRouter = createTRPCRouter({
   hello: publicProcedure
     .input(z.object({ text: z.string() }))
@@ -20,30 +30,45 @@ export const exampleRouter = createTRPCRouter({
     return ctx.prisma.example.findMany();
   }),
 
+  servicesAc: publicProcedure
+    .input(
+      z.object({
+        query: z.string().optional(),
+      })
+    )
+    .query(({ input, ctx }) => {
+      return ctx.prisma.services.findMany({
+        where: {
+          name: {
+            contains: input.query,
+          },
+        },
+      });
+    }),
+
   services: publicProcedure.query(({ ctx }) => {
     console.log(ctx.auth?.user);
     return ctx.prisma.services.findMany({
-      // where: { parent: null },
+      where: { parent: null },
       include: {
         children: true,
       },
     });
   }),
 
-  createService: publicProcedure
-    .input(
-      z.object({
-        name: z.string(),
-        price: z.number(),
+  listServices: publicProcedure
+    .input(z.string().cuid().array())
+    .query(({ input, ctx }) => {
+      return ctx.prisma.services.findMany({
+        where: { id: { in: input } },
+        include: {
+          children: true,
+        },
+      });
+    }),
 
-        children: z.array(
-          z.object({
-            name: z.string(),
-            price: z.number(),
-          })
-        ),
-      })
-    )
+  createService: publicProcedure
+    .input(createServiceSchema)
     .mutation(({ input, ctx }) => {
       return ctx.prisma.services.create({
         data: {
@@ -52,6 +77,7 @@ export const exampleRouter = createTRPCRouter({
           children: {
             create: input.children.map((child) => ({
               name: child.name,
+              description: child.description,
               price: child.price,
             })),
           },
@@ -78,7 +104,7 @@ export const exampleRouter = createTRPCRouter({
       if (!total) throw new TRPCClientError("No services found");
       return ctx.prisma.invoice.create({
         data: {
-          dueDate: new Date(),
+          dueDate: input.dueDate,
           total,
           services: {
             connect: input.serviceIds.map((id) => ({ id })),
