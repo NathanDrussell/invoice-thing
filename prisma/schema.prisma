@@ -32,22 +32,26 @@ model Services {
     Invoice     Invoice? @relation(fields: [invoiceId], references: [id])
     invoiceId   String?
 
+    orgId    String
     parentId String?
     parent   Services?  @relation(name: "childServices", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
     children Services[] @relation(name: "childServices")
 
     @@index([invoiceId], name: "invoiceId")
     @@index([parentId], name: "parentId")
+    @@index([orgId], name: "orgId")
 }
 
 model Invoice {
     id        String              @id @default(cuid())
     status    Status              @default(draft)
     services  Services[]
+    orgId     String
     total     Int
     dueDate   DateTime
     customers CustomersInvoices[]
 
+    @@index([orgId], name: "orgId")
     @@index([status], name: "status")
     @@index([dueDate], name: "dueDate")
     @@index([id, status], name: "id_status")
@@ -55,6 +59,7 @@ model Invoice {
 
 model Customer {
     id            String              @id @default(cuid())
+    orgId         String
     name          String
     email         String
     emailVerified Boolean             @default(false)
@@ -67,6 +72,8 @@ model Customer {
     createdAt     DateTime            @default(now())
     updatedAt     DateTime            @updatedAt
     invoices      CustomersInvoices[]
+
+    @@index([orgId], name: "orgId")
 }
 
 model CustomersInvoices {

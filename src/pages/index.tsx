@@ -39,46 +39,34 @@ export const useInvoiceActions = () => {
   const cancelInvoice = api.example.cancelInvoice.useMutation();
   const deleteInvoice = api.example.deleteInvoice.useMutation();
 
-  const handleCreateInvoice = async ({
-    serviceIds,
-    dueDate,
-  }: RouterInputs["example"]["createInvoice"]) => {
-    await createInvoice.mutateAsync({
-      serviceIds,
-      dueDate,
-    });
+  const handleCreateInvoice = async (
+    input: RouterInputs["example"]["createInvoice"]
+  ) => {
+    await createInvoice.mutateAsync(input);
   };
 
-  const handleSendInvoice = async ({
-    invoiceId,
-  }: RouterInputs["example"]["sendInvoice"]) => {
-    await sendInvoice.mutateAsync({
-      invoiceId,
-    });
+  const handleSendInvoice = async (
+    inputs: RouterInputs["example"]["sendInvoice"]
+  ) => {
+    await sendInvoice.mutateAsync(inputs);
   };
 
-  const handlePayInvoice = async ({
-    invoiceId,
-  }: RouterInputs["example"]["payInvoice"]) => {
-    await payInvoice.mutateAsync({
-      invoiceId,
-    });
+  const handlePayInvoice = async (
+    inputs: RouterInputs["example"]["payInvoice"]
+  ) => {
+    await payInvoice.mutateAsync(inputs);
   };
 
-  const handleCancelInvoice = async ({
-    invoiceId,
-  }: RouterInputs["example"]["cancelInvoice"]) => {
-    await cancelInvoice.mutateAsync({
-      invoiceId,
-    });
+  const handleCancelInvoice = async (
+    inputs: RouterInputs["example"]["cancelInvoice"]
+  ) => {
+    await cancelInvoice.mutateAsync(inputs);
   };
 
-  const handleDeleteInvoice = async ({
-    invoiceId,
-  }: RouterInputs["example"]["deleteInvoice"]) => {
-    await deleteInvoice.mutateAsync({
-      invoiceId,
-    });
+  const handleDeleteInvoice = async (
+    inputs: RouterInputs["example"]["deleteInvoice"]
+  ) => {
+    await deleteInvoice.mutateAsync(inputs);
   };
 
   return {

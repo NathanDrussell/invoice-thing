@@ -1,3 +1,4 @@
+import { clerkClient } from "@clerk/nextjs";
 import { Status } from "@prisma/client";
 import { TRPCClientError } from "@trpc/client";
 import { z } from "zod";
@@ -19,7 +20,7 @@ const createServiceSchema = _createServiceSchema.extend({
 });
 
 export const exampleRouter = createTRPCRouter({
-  hello: publicProcedure
+  hello: protectedProcedure
     .input(z.object({ text: z.string() }))
     .query(({ input }) => {
       return {
@@ -30,7 +31,7 @@ export const exampleRouter = createTRPCRouter({
     return ctx.prisma.example.findMany();
   }),
 
-  servicesAc: publicProcedure
+  servicesAc: protectedProcedure
     .input(
       z.object({
         query: z.string().optional(),
@@ -42,40 +43,42 @@ export const exampleRouter = createTRPCRouter({
           name: {
             contains: input.query,
           },
+          orgId: ctx.auth.orgId,
         },
       });
     }),
 
-  services: publicProcedure.query(({ ctx }) => {
-    console.log(ctx.auth?.user);
+  services: protectedProcedure.query(({ ctx }) => {
     return ctx.prisma.services.findMany({
-      where: { parent: null },
+      where: { parent: null, orgId: ctx.auth.orgId },
       include: {
         children: true,
       },
     });
   }),
 
-  listServices: publicProcedure
+  listServices: protectedProcedure
     .input(z.string().cuid().array())
     .query(({ input, ctx }) => {
       return ctx.prisma.services.findMany({
-        where: { id: { in: input } },
+        where: { id: { in: input }, orgId: ctx.auth.orgId },
         include: {
           children: true,
         },
       });
     }),
 
-  createService: publicProcedure
+  createService: protectedProcedure
     .input(createServiceSchema)
     .mutation(({ input, ctx }) => {
       return ctx.prisma.services.create({
         data: {
+          orgId: ctx.auth.orgId,
           name: input.name,
           price: input.price,
           children: {
             create: input.children.map((child) => ({
+              orgId: ctx.auth.orgId,
               name: child.name,
               description: child.description,
               price: child.price,
@@ -85,11 +88,12 @@ export const exampleRouter = createTRPCRouter({
       });
     }),
 
-  createInvoice: publicProcedure
+  createInvoice: protectedProcedure
     .input(
       z.object({
         dueDate: z.date(),
         serviceIds: z.array(z.string().cuid()),
+        customerIds: z.array(z.string().cuid()),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -104,6 +108,7 @@ export const exampleRouter = createTRPCRouter({
       if (!total) throw new TRPCClientError("No services found");
       return ctx.prisma.invoice.create({
         data: {
+          orgId: ctx.auth.orgId,
           dueDate: input.dueDate,
           total,
           services: {
@@ -113,17 +118,26 @@ export const exampleRouter = createTRPCRouter({
       });
     }),
 
-  invoices: publicProcedure.query(({ ctx }) => {
+  invoices: protectedProcedure.query(({ ctx }) => {
     return ctx.prisma.invoice.findMany({
-      where: { status: { not: "deleted" } },
+      where: { status: { not: "deleted" }, orgId: ctx.auth.orgId },
       include: {
         services: true,
-        customers: true,
+        customers: {
+          select: {
+            customer: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
   }),
 
-  createCustomer: publicProcedure
+  createCustomer: protectedProcedure
     .input(
       z.object({
         name: z.string(),
@@ -133,17 +147,37 @@ export const exampleRouter = createTRPCRouter({
     .mutation(({ input, ctx }) => {
       return ctx.prisma.customer.create({
         data: {
+          orgId: ctx.auth.orgId,
           name: input.name,
           email: input.email,
         },
       });
     }),
 
-  customers: publicProcedure.query(({ ctx }) => {
-    return ctx.prisma.customer.findMany();
+  customers: protectedProcedure.query(({ ctx }) => {
+    return ctx.prisma.customer.findMany({
+      where: { orgId: ctx.auth.orgId },
+    });
   }),
 
-  addCustomerToInvoice: publicProcedure
+  customersAc: protectedProcedure
+    .input(
+      z.object({
+        query: z.string().optional(),
+      })
+    )
+    .query(({ input, ctx }) => {
+      return ctx.prisma.customer.findMany({
+        where: {
+          name: {
+            contains: input.query,
+          },
+          orgId: ctx.auth.orgId,
+        },
+      });
+    }),
+
+  addCustomerToInvoice: protectedProcedure
     .input(
       z.object({
         customerId: z.string().cuid(),
@@ -176,7 +210,7 @@ export const exampleRouter = createTRPCRouter({
         });
     }),
 
-  sendInvoice: publicProcedure
+  sendInvoice: protectedProcedure
     .input(
       z.object({
         invoiceId: z.string().cuid(),
@@ -191,7 +225,7 @@ export const exampleRouter = createTRPCRouter({
       });
     }),
 
-  payInvoice: publicProcedure
+  payInvoice: protectedProcedure
     .input(
       z.object({
         invoiceId: z.string().cuid(),
@@ -204,7 +238,7 @@ export const exampleRouter = createTRPCRouter({
       });
     }),
 
-  deleteInvoice: publicProcedure
+  deleteInvoice: protectedProcedure
     .input(
       z.object({
         invoiceId: z.string().cuid(),
@@ -217,7 +251,7 @@ export const exampleRouter = createTRPCRouter({
       });
     }),
 
-  cancelInvoice: publicProcedure
+  cancelInvoice: protectedProcedure
     .input(
       z.object({
         invoiceId: z.string().cuid(),

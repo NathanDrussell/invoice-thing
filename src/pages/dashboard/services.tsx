@@ -16,6 +16,9 @@ import { useServiceActions } from "..";
 
 type CreateService = RouterInputs["example"]["createService"];
 
+
+// export const
+
 export const NewServiceModals: React.FC<{}> = ({}) => {
   const [, setDashboardState] = useDashboardState();
   const { createService } = useServiceActions();
@@ -154,13 +157,12 @@ export const NewServiceModals: React.FC<{}> = ({}) => {
   );
 };
 
-
 const useServices = () => api.example.services.useQuery(undefined);
 
 const Services: NextPage = () => {
   const { data: services } = useServices();
   const [, setDashboardState] = useDashboardState();
-  useSetDashboardTitle("Services")
+  useSetDashboardTitle("Services");
 
   //   useEffect(() => {
   //     setDashboardState((state) => ({ ...state, title: "Services" }));

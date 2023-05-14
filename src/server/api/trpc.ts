@@ -23,9 +23,9 @@ import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 
 import { prisma } from "~/server/db";
 
-type CreateContextOptions = {
-  auth: SignedInAuthObject | SignedOutAuthObject | null;
-};
+interface AuthContext {
+  auth: SignedInAuthObject | SignedOutAuthObject;
+}
 /**
  * This helper generates the "internals" for a tRPC context. If you need to use it, you can export
  * it from here.
@@ -36,22 +36,20 @@ type CreateContextOptions = {
  *
  * @see https://create.t3.gg/en/usage/trpc#-serverapitrpcts
  */
-const createInnerTRPCContext = (opts: CreateContextOptions) => {
+const createInnerTRPCContext = ({ auth }: AuthContext) => {
   return {
-    auth: opts.auth,
+    auth,
     prisma,
   };
 };
 
 /**
- * This is the actual context you will use in your router. It will be used to process every request
- * that goes through your tRPC endpoint.
- *
- * @see https://trpc.io/docs/context
+ * This is the actual context you'll use in your router. It will be used to
+ * process every request that goes through your tRPC endpoint
+ * @link https://trpc.io/docs/context
  */
-export const createTRPCContext = async (_opts: CreateNextContextOptions) => {
-  const auth = await getAuth(_opts.req);
-  return createInnerTRPCContext({ auth });
+export const createTRPCContext = async (opts: CreateNextContextOptions) => {
+  return createInnerTRPCContext({ auth: getAuth(opts.req) });
 };
 
 /**
@@ -102,14 +100,17 @@ export const createTRPCRouter = t.router;
  */
 export const publicProcedure = t.procedure;
 
-const isAuthed = t.middleware(({ next, ctx }) => {
-  if (!ctx.auth || !ctx.auth.user) {
+const isAuthed = t.middleware(async ({ next, ctx }) => {
+  if (!ctx.auth.userId || !ctx.auth.orgId) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
 
   return next({
     ctx: {
-      auth: { user: ctx.auth.user },
+      auth: {
+        userId: ctx.auth.userId!,
+        orgId: ctx.auth.orgId!,
+      },
     },
   });
 });

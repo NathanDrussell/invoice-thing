@@ -28,8 +28,40 @@ import { RouterInputs, RouterOutputs, api } from "~/utils/api";
 import { cn } from "~/utils/cn";
 import { Icons } from "~/utils/icons";
 import { useInvoiceActions, useServiceActions } from "..";
+import { CustomerAvatar } from "./customers";
 
 type CreateInvoice = RouterInputs["example"]["createInvoice"];
+type Invoice = RouterOutputs["example"]["invoices"][0];
+
+const servicePageState = atom({
+  selectedIds: [] as string[],
+});
+
+const useServicePageState = () => {
+  const [pageState, setPageState] = useAtom(servicePageState);
+
+  return {
+    selectedIds: pageState.selectedIds,
+
+    toggle: (id: string) => {
+      setPageState((state) => {
+        if (state.selectedIds.includes(id)) {
+          return {
+            ...state,
+            selectedIds: state.selectedIds.filter((selectedId) => {
+              return selectedId !== id;
+            }),
+          };
+        } else {
+          return {
+            ...state,
+            selectedIds: [...state.selectedIds, id],
+          };
+        }
+      });
+    },
+  };
+};
 
 // export const ServicesAutocomplete = ({}) => {
 //   const [query, setQuery] = React.useState<string>("");
@@ -60,11 +92,11 @@ type CreateInvoice = RouterInputs["example"]["createInvoice"];
 //   );
 // };
 
-function ServicesAutocomplete({
+export const ServicesAutocomplete = ({
   onSelect,
 }: {
   onSelect: (id: string) => void;
-}) {
+}) => {
   const lastSelectedService = useRef<string>("");
   const [selectedService, setSelectedService] = useState<string | Symbol>("");
   const [query, setQuery] = useState("");
@@ -104,7 +136,7 @@ function ServicesAutocomplete({
           value.name
         }
       />
-      <Combobox.Options className="absolute top-full mt-2 w-full rounded border  bg-white shadow-lg">
+      <Combobox.Options className="absolute top-full z-50 mt-2 w-full rounded  border bg-white shadow-lg">
         {services?.map((service) => (
           <Combobox.Option key={service.id} value={service.id} as={Fragment}>
             {({ active, selected }) => (
@@ -136,7 +168,77 @@ function ServicesAutocomplete({
       </Combobox.Options>
     </Combobox>
   );
-}
+};
+
+export const CustomersAutocomplete = ({
+  onSelect,
+}: {
+  onSelect: (id: string) => void;
+}) => {
+  const lastSelectedService = useRef<string>("");
+  const [selectedCustomer, setSelectedCustomer] = useState<string | Symbol>("");
+  const [query, setQuery] = useState("");
+
+  const { data: customers } = api.example.customersAc.useQuery(
+    { query },
+    {
+      enabled: query.length >= 0,
+    }
+  );
+
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    if (selectedCustomer === Symbol.for("new")) {
+      // open modal
+    } else {
+      if (selectedCustomer !== lastSelectedService.current) {
+        lastSelectedService.current = selectedCustomer as string;
+        onSelect(selectedCustomer as string);
+        setSelectedCustomer("");
+      }
+    }
+  }, [selectedCustomer]);
+
+  return (
+    <Combobox
+      value={selectedCustomer}
+      onChange={setSelectedCustomer}
+      as={"div"}
+      className="relative"
+    >
+      <Combobox.Input
+        placeholder="Add a customer..."
+        className={inputClassName}
+        onChange={(event) => setQuery(event.target.value)}
+        displayValue={(value: RouterOutputs["example"]["servicesAc"][0]) =>
+          value.name
+        }
+      />
+      <Combobox.Options className="absolute top-full z-50 mt-2 w-full rounded  border bg-white shadow-lg">
+        {customers?.map((service) => (
+          <Combobox.Option key={service.id} value={service.id} as={Fragment}>
+            {({ active, selected }) => (
+              <li
+                className={cn(
+                  "flex w-full items-center gap-2 p-2 capitalize",
+                  active ? "bg-slate-100" : ""
+                )}
+              >
+                {selected ? <Icons.Check /> : null}
+                {service.name}
+              </li>
+            )}
+          </Combobox.Option>
+        ))}
+        {customers?.length === 0 && (
+          <Combobox.Option value={Symbol.for("new")} className="w-full p-2">
+            Add a new service
+          </Combobox.Option>
+        )}
+      </Combobox.Options>
+    </Combobox>
+  );
+};
 
 const colorClasses = {
   gray: "bg-gray-50 text-gray-800 ring-gray-600/20",
@@ -175,6 +277,10 @@ export const NewInvoiceModal: React.FC<{}> = ({}) => {
     CreateInvoice["serviceIds"]
   >([]);
 
+  const [customerIds, setCustomerIds] = React.useState<
+    CreateInvoice["customerIds"]
+  >([]);
+
   const servicesQuery = api.example.listServices.useQuery(
     serviceIds.filter(Boolean),
     {
@@ -190,7 +296,11 @@ export const NewInvoiceModal: React.FC<{}> = ({}) => {
   };
 
   const doCreateInvoice = () => {
-    createInvoice({ dueDate, serviceIds: serviceIds.filter(Boolean) });
+    createInvoice({
+      dueDate,
+      customerIds,
+      serviceIds: serviceIds.filter(Boolean),
+    });
   };
 
   return (
@@ -216,7 +326,11 @@ export const NewInvoiceModal: React.FC<{}> = ({}) => {
 
       <ServicesAutocomplete
         onSelect={(id) => setServiceIds((ids) => [...ids, id])}
-      ></ServicesAutocomplete>
+      />
+
+      <CustomersAutocomplete
+        onSelect={(id) => setCustomerIds((ids) => [...ids, id])}
+      />
 
       {servicesQuery.data?.map((service) => {
         return <div key={service.id}>{service.name}</div>;
@@ -237,7 +351,9 @@ const useInvoices = () => api.example.invoices.useQuery(undefined);
 const Invoices: NextPage = () => {
   const { data: invoices } = useInvoices();
   const [, setDashboardState] = useDashboardState();
+  const { sendInvoice } = useInvoiceActions();
   useSetDashboardTitle("Invoices");
+  const ps = useServicePageState();
 
   //   useEffect(() => {
   //     setDashboardState((state) => ({ ...state, title: "Invoices" }));
@@ -260,6 +376,26 @@ const Invoices: NextPage = () => {
             icon={<Icons.Plus className="text-black" />}
             label="ADD"
           />
+          {/* // send */}
+          <Button
+            disabled={ps.selectedIds.length === 0}
+            onClick={() => {
+              ps.selectedIds.forEach((invoiceId: string) => {
+                sendInvoice({ invoiceId });
+              });
+            }}
+            icon={<Icons.PaperPlaneTilt className="text-black" />}
+            label="SEND"
+          />
+
+          <Button
+            disabled={ps.selectedIds.length === 0}
+            onClick={() => {
+              console.log(ps.selectedIds);
+            }}
+            icon={<Icons.Trash className="text-black" />}
+            label="DELETE"
+          />
         </div>
       }
     >
@@ -274,11 +410,16 @@ const Invoices: NextPage = () => {
           } as Record<(typeof invoice)["status"], keyof typeof colorClasses>;
 
           return (
-            <div>
+            <div onClick={() => ps.toggle(invoice.id)}>
               <div className="flex border-b">
                 <div key={invoice.id} className="flex w-fit gap-2 p-2">
                   <div className="flex w-fit items-center gap-2">
-                    <input type="checkbox" name="" id="" />
+                    <input
+                      type="checkbox"
+                      checked={ps.selectedIds.includes(invoice.id)}
+                      name=""
+                      id=""
+                    />
                     <strong>{invoice.id}</strong>
                   </div>
                   {invoice.status === "sent" && (
@@ -296,6 +437,14 @@ const Invoices: NextPage = () => {
                   )}
                 </div>
                 <div className="ml-auto"></div>
+                <div className="flex -space-x-2">
+                  {invoice.customers.map(({ customer }, i) => (
+                    <CustomerAvatar
+                      key={customer?.id || i}
+                      name={customer?.name || ""}
+                    />
+                  ))}
+                </div>
                 <div className="mr-8 flex max-w-md flex-wrap items-center gap-1 py-2 text-xs">
                   {invoice.services
                     ?.map((service) => service.name)
@@ -312,7 +461,7 @@ const Invoices: NextPage = () => {
                     //   compactDisplay: "short",
                     currencyDisplay: "symbol",
                   })}
-                  {invoice.status !== "paid" && invoice.dueDate < new Date() ? (
+                  {invoice.status === "sent" && invoice.dueDate < new Date() ? (
                     <Badge color="red">
                       <Icons.Warning className="mr-1" />
                       overdue
