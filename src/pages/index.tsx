@@ -9,104 +9,9 @@ import { util, z } from "zod";
 import type { RouterInputs, RouterOutputs } from "~/utils/api";
 
 import { api } from "~/utils/api";
-
-export const useServiceActions = () => {
-  const createService = api.example.createService.useMutation();
-
-  const handleCreateService = async ({
-    name,
-    price,
-    description,
-    children,
-  }: RouterInputs["example"]["createService"]) => {
-    await createService.mutateAsync({
-      name,
-      description,
-      price: z.number().parse(price),
-      children,
-    });
-  };
-
-  return {
-    createService: handleCreateService,
-  };
-};
-
-export const useInvoiceActions = () => {
-  const createInvoice = api.example.createInvoice.useMutation();
-  const sendInvoice = api.example.sendInvoice.useMutation();
-  const payInvoice = api.example.payInvoice.useMutation();
-  const cancelInvoice = api.example.cancelInvoice.useMutation();
-  const deleteInvoice = api.example.deleteInvoice.useMutation();
-
-  const handleCreateInvoice = async (
-    input: RouterInputs["example"]["createInvoice"]
-  ) => {
-    await createInvoice.mutateAsync(input);
-  };
-
-  const handleSendInvoice = async (
-    inputs: RouterInputs["example"]["sendInvoice"]
-  ) => {
-    await sendInvoice.mutateAsync(inputs);
-  };
-
-  const handlePayInvoice = async (
-    inputs: RouterInputs["example"]["payInvoice"]
-  ) => {
-    await payInvoice.mutateAsync(inputs);
-  };
-
-  const handleCancelInvoice = async (
-    inputs: RouterInputs["example"]["cancelInvoice"]
-  ) => {
-    await cancelInvoice.mutateAsync(inputs);
-  };
-
-  const handleDeleteInvoice = async (
-    inputs: RouterInputs["example"]["deleteInvoice"]
-  ) => {
-    await deleteInvoice.mutateAsync(inputs);
-  };
-
-  return {
-    createInvoice: handleCreateInvoice,
-    sendInvoice: handleSendInvoice,
-    payInvoice: handlePayInvoice,
-    cancelInvoice: handleCancelInvoice,
-    deleteInvoice: handleDeleteInvoice,
-  };
-};
-
-export const useCustomerActions = () => {
-  const createCustomer = api.example.createCustomer.useMutation();
-  const addCustomerToInvoice = api.example.addCustomerToInvoice.useMutation();
-
-  const handleCreateCustomer = async ({
-    name,
-    email,
-  }: RouterInputs["example"]["createCustomer"]) => {
-    await createCustomer.mutateAsync({
-      name,
-      email,
-    });
-  };
-
-  const handleAddCustomerToInvoice = async ({
-    customerId,
-    invoiceId,
-  }: RouterInputs["example"]["addCustomerToInvoice"]) => {
-    await addCustomerToInvoice.mutateAsync({
-      customerId,
-      invoiceId,
-    });
-  };
-
-  return {
-    createCustomer: handleCreateCustomer,
-    addCustomerToInvoice: handleAddCustomerToInvoice,
-  };
-};
+import { useCustomerActions } from "./dashboard/customers";
+import { useInvoiceActions } from "./dashboard/invoices";
+import { useServiceActions } from "./dashboard/services";
 
 const Home: NextPage = () => {
   const invoiceActions = useInvoiceActions();
@@ -117,23 +22,21 @@ const Home: NextPage = () => {
   const [invoiceId, setInvoiceId] = useState<string>("");
   const [customerId, setCustomerId] = useState<string>("");
 
-  type A = Parameters<typeof api.example.services.useQuery>[1];
-
-  const services = api.example.services.useQuery(undefined, {
+  const services = api.service.list.useQuery(undefined, {
     onSuccess: (data) => {
       if (data.length > 0) {
         setInvoiceServiceId(data[0]!.id);
       }
     },
   });
-  const invoices = api.example.invoices.useQuery(undefined, {
+  const invoices = api.invoice.list.useQuery(undefined, {
     onSuccess: (data) => {
       if (data.length > 0) {
         setInvoiceId(data[0]!.id);
       }
     },
   });
-  const customers = api.example.customers.useQuery(undefined, {
+  const customers = api.customer.list.useQuery(undefined, {
     onSuccess: (data) => {
       if (data.length > 0) {
         setCustomerId(data[0]!.id);
@@ -141,42 +44,32 @@ const Home: NextPage = () => {
     },
   });
 
-  const createCustomer = api.example.createCustomer.useMutation();
+  const createCustomer = api.customer.create.useMutation();
 
-  const addCustomerToInvoice = api.example.addCustomerToInvoice.useMutation();
+  const addCustomerToInvoice = api.customer.addToInvoice.useMutation();
   const [name, setName] = useState("");
   const [price, setPrice] = useState<number>(0);
   const [children, setChildren] = useState<
-    RouterInputs["example"]["createService"]["children"]
+    RouterInputs["service"]["create"]["children"]
   >([]);
   const [cName, setCName] = useState("");
+  const [cDescription, setCDescription] = useState<string>("");
   const [cPrice, setCPrice] = useState<number>(0);
 
   const [invoiceDate, setInvoiceDate] = useState(() => new Date());
   const [invoiceServiceIds, setInvoiceServiceIds] = useState<
-    RouterInputs["example"]["createInvoice"]["serviceIds"]
+    RouterInputs["invoice"]["create"]["serviceIds"]
   >([]);
 
   const [customerName, setCustomerName] = useState<string>("");
   const [customerEmail, setCustomerEmail] = useState<string>("");
-
-  // const handleCreateService = async () => {
-  //   await createService
-  //     .mutateAsync({
-  //       name,
-  //       price: z.number().parse(price),
-  //       children,
-  //     })
-  //     .then(() => {
-  //       services.refetch();
-  //     });
-  // };
 
   const addChild = () => {
     setChildren((prev) => [
       ...prev,
       {
         name: cName,
+        description: cDescription,
         price: z.number().parse(cPrice),
       },
     ]);
@@ -185,80 +78,6 @@ const Home: NextPage = () => {
   const addInvoiceChild = () => {
     setInvoiceServiceIds((prev) => [...prev, invoiceServiceId]);
   };
-
-  // const handleCreateInvoice = async () => {
-  //   await createInvoice
-  //     .mutateAsync({
-  //       serviceIds: invoiceServiceIds,
-  //       dueDate: invoiceDate,
-  //     })
-  //     .then(() => {
-  //       invoices.refetch();
-  //     });
-  // };
-
-  // const handleCreateCustomer = async () => {
-  //   await createCustomer
-  //     .mutateAsync({
-  //       name: customerName,
-  //       email: customerEmail,
-  //     })
-  //     .then(() => {
-  //       customers.refetch();
-  //     });
-  // };
-
-  // const handleAddCustomerToInvoice = async () => {
-  //   console.log({ customerId, invoiceId });
-  //   await addCustomerToInvoice
-  //     .mutateAsync({
-  //       customerId,
-  //       invoiceId,
-  //     })
-  //     .then(() => {
-  //       invoices.refetch();
-  //     });
-  // };
-
-  // const handleSendInvoice = async () => {
-  //   await sendInvoice
-  //     .mutateAsync({
-  //       invoiceId,
-  //     })
-  //     .then(() => {
-  //       invoices.refetch();
-  //     });
-  // };
-
-  // const handlePayInvoice = async () => {
-  //   await payInvoice
-  //     .mutateAsync({
-  //       invoiceId,
-  //     })
-  //     .then(() => {
-  //       invoices.refetch();
-  //     });
-  // };
-
-  // const handleCancelInvoice = async () => {
-  //   await cancelInvoice
-  //     .mutateAsync({
-  //       invoiceId,
-  //     })
-  //     .then(() => {
-  //       invoices.refetch();
-  //     });
-  // };
-
-  // const handleDeleteInvoice = async () => {
-  //   await deleteInvoice
-  //     .mutateAsync({
-  //       invoiceId,
-  //     })
-  //     .then(() => {
-  //       invoices.refetch();
-  //     });
-  // };
 
   const ctx = {
     invoiceServiceId,
@@ -331,9 +150,10 @@ const Home: NextPage = () => {
 
           <button
             onClick={() =>
-              serviceActions.createService({
+              serviceActions.create.mutate({
                 name,
                 price,
+                description: "",
                 children,
               })
             }
@@ -368,9 +188,10 @@ const Home: NextPage = () => {
           <button onClick={addInvoiceChild}>Add invoice child</button>
           <button
             onClick={() =>
-              invoiceActions.createInvoice({
+              invoiceActions.create.mutateAsync({
                 dueDate: invoiceDate,
                 serviceIds: invoiceServiceIds,
+                customerIds: [],
               })
             }
           >
@@ -392,7 +213,7 @@ const Home: NextPage = () => {
 
           <button
             onClick={() =>
-              customerActions.createCustomer({
+              customerActions.create.mutate({
                 name: customerName,
                 email: customerEmail,
               })
@@ -436,7 +257,7 @@ const Home: NextPage = () => {
 
           <button
             onClick={() =>
-              customerActions.addCustomerToInvoice({
+              customerActions.addToInvoice.mutate({
                 customerId,
                 invoiceId,
               })
@@ -445,16 +266,16 @@ const Home: NextPage = () => {
             Add customer to invoice
           </button>
 
-          <button onClick={() => invoiceActions.sendInvoice({ invoiceId })}>
+          <button onClick={() => invoiceActions.send.mutate({ invoiceId })}>
             Send invoice
           </button>
-          <button onClick={() => invoiceActions.payInvoice({ invoiceId })}>
+          <button onClick={() => invoiceActions.pay.mutate({ invoiceId })}>
             Pay invoice
           </button>
-          <button onClick={() => invoiceActions.cancelInvoice({ invoiceId })}>
+          <button onClick={() => invoiceActions.cancel.mutate({ invoiceId })}>
             Cancel invoice
           </button>
-          <button onClick={() => invoiceActions.deleteInvoice({ invoiceId })}>
+          <button onClick={() => invoiceActions.delete.mutate({ invoiceId })}>
             Delete invoice
           </button>
 

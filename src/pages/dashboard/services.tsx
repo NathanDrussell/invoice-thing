@@ -12,16 +12,20 @@ import {
 import { RouterInputs, api } from "~/utils/api";
 import { cn } from "~/utils/cn";
 import { Icons } from "~/utils/icons";
-import { useServiceActions } from "..";
 
-type CreateService = RouterInputs["example"]["createService"];
+export const useServiceActions = () => {
+  const create = api.service.create.useMutation();
 
+  return {
+    create,
+  };
+};
 
-// export const
+type CreateService = RouterInputs["service"]["create"];
 
 export const NewServiceModals: React.FC<{}> = ({}) => {
   const [, setDashboardState] = useDashboardState();
-  const { createService } = useServiceActions();
+  const { create } = useServiceActions();
 
   const [name, setName] = React.useState<CreateService["name"]>("");
   const [description, setDescription] =
@@ -41,7 +45,7 @@ export const NewServiceModals: React.FC<{}> = ({}) => {
   const doCreateService = () => {
     const filtered = chilldren.filter((child) => child.name && child.price);
 
-    createService({ name, description, price, children: filtered });
+    create.mutateAsync({ name, description, price, children: filtered });
   };
 
   return (
@@ -157,16 +161,12 @@ export const NewServiceModals: React.FC<{}> = ({}) => {
   );
 };
 
-const useServices = () => api.example.services.useQuery(undefined);
+const useServices = () => api.service.list.useQuery(undefined);
 
 const Services: NextPage = () => {
   const { data: services } = useServices();
   const [, setDashboardState] = useDashboardState();
   useSetDashboardTitle("Services");
-
-  //   useEffect(() => {
-  //     setDashboardState((state) => ({ ...state, title: "Services" }));
-  //   }, []);
 
   const openModal = () => {
     setDashboardState((state) => ({
@@ -174,6 +174,7 @@ const Services: NextPage = () => {
       modals: [...state.modals, <NewServiceModals key={state.modals.length} />],
     }));
   };
+
   return (
     <Dashboard
       sidebar={<TheDashboardSidebar />}

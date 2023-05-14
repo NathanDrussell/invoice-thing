@@ -12,13 +12,21 @@ import {
 import { RouterInputs, api } from "~/utils/api";
 import { cn } from "~/utils/cn";
 import { Icons } from "~/utils/icons";
-import { useCustomerActions } from "..";
 
-type CreateCustomer = RouterInputs["example"]["createCustomer"];
+export const useCustomerActions = () => {
+  const create = api.customer.create.useMutation();
+  const addToInvoice = api.customer.addToInvoice.useMutation();
+
+  return {
+    create,
+    addToInvoice,
+  };
+};
+type CreateCustomer = RouterInputs["customer"]["create"];
 
 export const NewCustomerModals: React.FC<{}> = ({}) => {
   const [, setDashboardState] = useDashboardState();
-  const { createCustomer } = useCustomerActions();
+  const { create } = useCustomerActions();
 
   const [name, setName] = React.useState<CreateCustomer["name"]>("");
   const [email, setEmail] = React.useState<CreateCustomer["email"]>("");
@@ -31,9 +39,7 @@ export const NewCustomerModals: React.FC<{}> = ({}) => {
   };
 
   const doCreateCustomer = () => {
-    createCustomer({ name, email }).then(() => {
-      onClose();
-    });
+    create.mutateAsync({ name, email }).then(() => onClose());
   };
 
   return (
@@ -66,7 +72,7 @@ export const NewCustomerModals: React.FC<{}> = ({}) => {
   );
 };
 
-const useCustomers = () => api.example.customers.useQuery(undefined);
+const useCustomers = () => api.customer.list.useQuery(undefined);
 
 const useSeededHslColor = (seed: string, l = "20%") => {
   const hsl = React.useMemo(() => {

@@ -27,11 +27,25 @@ import {
 import { RouterInputs, RouterOutputs, api } from "~/utils/api";
 import { cn } from "~/utils/cn";
 import { Icons } from "~/utils/icons";
-import { useInvoiceActions, useServiceActions } from "..";
 import { CustomerAvatar } from "./customers";
 
-type CreateInvoice = RouterInputs["example"]["createInvoice"];
-type Invoice = RouterOutputs["example"]["invoices"][0];
+export const useInvoiceActions = () => {
+  const create = api.invoice.create.useMutation();
+  const send = api.invoice.send.useMutation();
+  const pay = api.invoice.pay.useMutation();
+  const cancel = api.invoice.cancel.useMutation();
+  const del = api.invoice.delete.useMutation();
+
+  return {
+    create,
+    send,
+    pay,
+    cancel,
+    delete: del,
+  };
+};
+type CreateInvoice = RouterInputs["invoice"]["create"];
+type Invoice = RouterOutputs["invoice"]["list"][0];
 
 const servicePageState = atom({
   selectedIds: [] as string[],
@@ -101,7 +115,7 @@ export const ServicesAutocomplete = ({
   const [selectedService, setSelectedService] = useState<string | Symbol>("");
   const [query, setQuery] = useState("");
 
-  const { data: services } = api.example.servicesAc.useQuery(
+  const { data: services } = api.service.ac.useQuery(
     { query },
     {
       enabled: query.length >= 0,
@@ -132,9 +146,7 @@ export const ServicesAutocomplete = ({
         placeholder="Add a service..."
         className={inputClassName}
         onChange={(event) => setQuery(event.target.value)}
-        displayValue={(value: RouterOutputs["example"]["servicesAc"][0]) =>
-          value.name
-        }
+        displayValue={(value: RouterOutputs["service"]["ac"][0]) => value.name}
       />
       <Combobox.Options className="absolute top-full z-50 mt-2 w-full rounded  border bg-white shadow-lg">
         {services?.map((service) => (
@@ -179,7 +191,7 @@ export const CustomersAutocomplete = ({
   const [selectedCustomer, setSelectedCustomer] = useState<string | Symbol>("");
   const [query, setQuery] = useState("");
 
-  const { data: customers } = api.example.customersAc.useQuery(
+  const { data: customers } = api.customer.ac.useQuery(
     { query },
     {
       enabled: query.length >= 0,
@@ -210,9 +222,7 @@ export const CustomersAutocomplete = ({
         placeholder="Add a customer..."
         className={inputClassName}
         onChange={(event) => setQuery(event.target.value)}
-        displayValue={(value: RouterOutputs["example"]["servicesAc"][0]) =>
-          value.name
-        }
+        displayValue={(value: RouterOutputs["service"]["ac"][0]) => value.name}
       />
       <Combobox.Options className="absolute top-full z-50 mt-2 w-full rounded  border bg-white shadow-lg">
         {customers?.map((service) => (
@@ -268,7 +278,7 @@ const Badge: React.FC<{
 
 export const NewInvoiceModal: React.FC<{}> = ({}) => {
   const [, setDashboardState] = useDashboardState();
-  const { createInvoice } = useInvoiceActions();
+  const invoiceActions = useInvoiceActions();
 
   const [dueDate, setDueDate] = React.useState<CreateInvoice["dueDate"]>(
     new Date()
@@ -281,12 +291,9 @@ export const NewInvoiceModal: React.FC<{}> = ({}) => {
     CreateInvoice["customerIds"]
   >([]);
 
-  const servicesQuery = api.example.listServices.useQuery(
-    serviceIds.filter(Boolean),
-    {
-      enabled: serviceIds.length > 0,
-    }
-  );
+  const servicesQuery = api.service.ids.useQuery(serviceIds.filter(Boolean), {
+    enabled: serviceIds.length > 0,
+  });
 
   const onClose = () => {
     setDashboardState((state) => ({
@@ -296,7 +303,7 @@ export const NewInvoiceModal: React.FC<{}> = ({}) => {
   };
 
   const doCreateInvoice = () => {
-    createInvoice({
+    invoiceActions.create.mutateAsync({
       dueDate,
       customerIds,
       serviceIds: serviceIds.filter(Boolean),
@@ -346,12 +353,12 @@ export const NewInvoiceModal: React.FC<{}> = ({}) => {
   );
 };
 
-const useInvoices = () => api.example.invoices.useQuery(undefined);
+const useInvoices = () => api.invoice.list.useQuery(undefined);
 
 const Invoices: NextPage = () => {
   const { data: invoices } = useInvoices();
   const [, setDashboardState] = useDashboardState();
-  const { sendInvoice } = useInvoiceActions();
+  const invoiceActions = useInvoiceActions();
   useSetDashboardTitle("Invoices");
   const ps = useServicePageState();
 
@@ -381,7 +388,7 @@ const Invoices: NextPage = () => {
             disabled={ps.selectedIds.length === 0}
             onClick={() => {
               ps.selectedIds.forEach((invoiceId: string) => {
-                sendInvoice({ invoiceId });
+                invoiceActions.send.mutateAsync({ invoiceId });
               });
             }}
             icon={<Icons.PaperPlaneTilt className="text-black" />}
