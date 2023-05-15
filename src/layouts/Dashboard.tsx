@@ -24,6 +24,13 @@ export const TheDashboardSidebar = () => {
   return (
     <>
       <Link
+        href="/dashboard/projects"
+        className="flex items-center gap-2 border-b p-2 last:border-b-0 hover:bg-slate-100 focus:ring-1 active:ring-2"
+      >
+        <Icons.BookOpen />
+        Projects
+      </Link>
+      <Link
         href="/dashboard/customers"
         className="flex items-center gap-2 border-b p-2 last:border-b-0 hover:bg-slate-100 focus:ring-1 active:ring-2"
       >

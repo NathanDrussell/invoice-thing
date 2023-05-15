@@ -10,12 +10,6 @@ datasource db {
     relationMode = "prisma"
 }
 
-model Example {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-}
-
 enum Status {
     deleted
     draft
@@ -33,9 +27,10 @@ model Service {
 
     orgId    String
     parentId String?
-    parent   Service?      @relation(name: "childServices", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-    children Service[]     @relation(name: "childServices")
+    parent   Service?           @relation(name: "childServices", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    children Service[]          @relation(name: "childServices")
     invoices InvoiceItem[]
+    projects ProjectsServices[]
 
     @@index([invoiceId], name: "invoiceId")
     @@index([parentId], name: "parentId")
@@ -51,6 +46,7 @@ model Invoice {
     dueDate   DateTime
     customers CustomersInvoices[]
     items     InvoiceItem[]
+    projects  ProjectsInvoices[]
 
     @@index([orgId], name: "orgId")
     @@index([status], name: "status")
@@ -84,17 +80,65 @@ model Customer {
     createdAt     DateTime            @default(now())
     updatedAt     DateTime            @updatedAt
     invoices      CustomersInvoices[]
+    projects      ProjectsCustomers[]
 
     @@index([orgId], name: "orgId")
 }
 
 model CustomersInvoices {
     customerId String
-    customer   Customer? @relation(fields: [customerId], references: [id])
+    customer   Customer @relation(fields: [customerId], references: [id])
     invoiceId  String
-    invoice    Invoice?  @relation(fields: [invoiceId], references: [id])
+    invoice    Invoice  @relation(fields: [invoiceId], references: [id])
 
     @@id([customerId, invoiceId])
     @@index([customerId], name: "customerId")
     @@index([invoiceId], name: "invoiceId")
+}
+
+model Project {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    name      String
+    orgId     String
+
+    customers ProjectsCustomers[]
+    invoices  ProjectsInvoices[]
+    services  ProjectsServices[]
+
+    @@index([orgId], name: "orgId")
+}
+
+model ProjectsServices {
+    serviceId String
+    service   Service @relation(fields: [serviceId], references: [id])
+    projectId String
+    project   Project @relation(fields: [projectId], references: [id])
+
+    @@id([projectId, serviceId])
+    @@index([projectId], name: "projectId")
+    @@index([serviceId], name: "serviceId")
+}
+
+model ProjectsInvoices {
+    projectId String
+    project   Project @relation(fields: [projectId], references: [id])
+    invoiceId String
+    invoice   Invoice @relation(fields: [invoiceId], references: [id])
+
+    @@id([projectId, invoiceId])
+    @@index([projectId], name: "projectId")
+    @@index([invoiceId], name: "invoiceId")
+}
+
+model ProjectsCustomers {
+    projectId  String
+    project    Project  @relation(fields: [projectId], references: [id])
+    customerId String
+    customer   Customer @relation(fields: [customerId], references: [id])
+
+    @@id([projectId, customerId])
+    @@index([projectId], name: "projectId")
+    @@index([customerId], name: "customerId")
 }

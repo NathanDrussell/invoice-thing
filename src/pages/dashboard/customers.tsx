@@ -173,7 +173,7 @@ export const CustomerAvatar: React.FC<{ name: string; className?: string }> = ({
   const [initials] = React.useState(() => {
     const [first, last] = name.split(" ");
 
-    return `${first?.[0]}${last?.[0]}`.toUpperCase();
+    return `${first?.[0] || ''}${last?.[0] || ''}`.toUpperCase();
   });
 
   return (
