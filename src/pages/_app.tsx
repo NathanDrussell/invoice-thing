@@ -15,9 +15,9 @@ const MyApp: AppType = ({ Component, pageProps }) => {
         crossOrigin={""}
       />
       <link
-        href="https://fonts.googleapis.com/css2?family=Caveat&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap"
         rel="stylesheet"
-      />
+      ></link>
       <Component {...pageProps} />
     </ClerkProvider>
   );

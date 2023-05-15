@@ -76,6 +76,7 @@ export const useInvoiceActions = () => {
 };
 
 export const NewInvoiceModal: React.FC<{ seed?: Invoice }> = ({ seed }) => {
+  const utils = api.useContext();
   const [, setDashboardState] = useDashboardState();
   const invoiceActions = useInvoiceActions();
 
@@ -98,11 +99,16 @@ export const NewInvoiceModal: React.FC<{ seed?: Invoice }> = ({ seed }) => {
   };
 
   const doCreateInvoice = () => {
-    invoiceActions.create.mutateAsync({
-      dueDate,
-      customerIds,
-      serviceIds: serviceIds.filter(Boolean),
-    });
+    invoiceActions.create
+      .mutateAsync({
+        dueDate,
+        customerIds,
+        serviceIds: serviceIds.filter(Boolean),
+      })
+      .then(() => {
+        utils.invoice.list.invalidate();
+        onClose();
+      });
   };
 
   const afterNewCustomer = (customerId: string) => {
@@ -197,6 +203,7 @@ const Invoices: NextPage = () => {
   useSetDashboardTitle("Invoices");
   const ps = useInvoicePageState();
   const openModal = useInvoiceModal();
+  const utils = api.useContext();
 
   //   useEffect(() => {
   //     setDashboardState((state) => ({ ...state, title: "Invoices" }));
@@ -217,7 +224,9 @@ const Invoices: NextPage = () => {
             disabled={ps.selectedIds.length === 0}
             onClick={() => {
               ps.selectedIds.forEach((invoiceId: string) => {
-                invoiceActions.send.mutateAsync({ invoiceId });
+                invoiceActions.send.mutateAsync({ invoiceId }).then(() => {
+                  utils.invoice.list.invalidate();
+                });
               });
             }}
             icon={<Icons.PaperPlaneTilt className="text-black" />}

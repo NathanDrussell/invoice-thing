@@ -18,7 +18,7 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3 border rounded", className)}
+      className={cn("rounded border p-3", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
@@ -42,7 +42,7 @@ function Calendar({
           "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
         ),
         day_selected:
-          "bg-neutral-200 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 focus:bg-blue-700 focus:text-black rounded",
+          "bg-neutral-100 text-neutral-700 hover:text-neutral-900 focus:bg-blue-700 focus:text-black rounded before:z-[950] before:content-['Due'] relative before:absolute before:top-0 before:left-0 before:-translate-x-[40%] before:-translate-y-[40%] before:rotate-[-30deg] before:font-[Caveat] before:font-bold before:text-red-600 before:text-lg",
         day_today: "bg-accent text-accent-foreground",
         day_outside: "text-muted-foreground opacity-50",
         day_disabled: "text-muted-foreground opacity-50",
