@@ -24,6 +24,13 @@ export const TheDashboardSidebar = () => {
   return (
     <>
       <Link
+        href="/dashboard/customers"
+        className="flex items-center gap-2 border-b p-2 last:border-b-0 hover:bg-slate-100 focus:ring-1 active:ring-2"
+      >
+        <Icons.UsersThree />
+        Customers
+      </Link>
+      <Link
         href="/dashboard/services"
         className="flex items-center gap-2 border-b p-2 last:border-b-0  hover:bg-slate-100 focus:ring-1 active:ring-2"
       >
@@ -36,13 +43,6 @@ export const TheDashboardSidebar = () => {
       >
         <Icons.Files />
         Invoices
-      </Link>
-      <Link
-        href="/dashboard/customers"
-        className="flex items-center gap-2 border-b p-2 last:border-b-0 hover:bg-slate-100 focus:ring-1 active:ring-2"
-      >
-        <Icons.UsersThree />
-        Customers
       </Link>
       <button
         className="flex items-center gap-2 border-b p-2 last:border-b-0 hover:bg-slate-100 focus:ring-1 active:ring-2"
@@ -79,9 +79,7 @@ const ClerkModal = ({ children, onClose }: any) => {
     };
   }, []);
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-start justify-center bg-black/40 pt-16 backdrop-blur-sm"
-    >
+    <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/40 pt-16 backdrop-blur-sm">
       <div className="relative z-50">{children}</div>
     </div>
   );

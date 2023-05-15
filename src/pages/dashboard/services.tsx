@@ -2,8 +2,22 @@ import { UserButton } from "@clerk/nextjs";
 import { Combobox } from "@headlessui/react";
 import { atom, useAtom } from "jotai";
 import { NextPage } from "next";
-import React, { Children, Fragment, useEffect, useRef, useState } from "react";
-import { Badge, Button, Input, Modal, Textarea, inputClassName } from "~/components/base";
+import React, {
+  Children,
+  Fragment,
+  SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  Badge,
+  Button,
+  Input,
+  Modal,
+  Textarea,
+  inputClassName,
+} from "~/components/base";
 import {
   Dashboard,
   TheDashboardSidebar,
@@ -95,6 +109,45 @@ export const ServicesAutocomplete = ({
         )}
       </Combobox.Options>
     </Combobox>
+  );
+};
+
+export const ServicesList: React.FC<{
+  serviceIds: string[];
+  setServiceIds: React.Dispatch<SetStateAction<string[]>>;
+
+  afterNewService?: (serviceId: string) => void;
+}> = ({ serviceIds, setServiceIds, afterNewService }) => {
+  const servicesQuery = api.service.byIds.useQuery(serviceIds.filter(Boolean), {
+    enabled: serviceIds.length > 0,
+  });
+
+  const onNewService = (customerId: string) => {
+    setServiceIds((ids) => [...ids, customerId]);
+    afterNewService?.(customerId);
+  };
+
+  return (
+    <>
+      <ServicesAutocomplete onSelect={onNewService} />
+      {servicesQuery.data?.map((service) => {
+        return (
+          <div
+            className="mt-2 flex items-center justify-between rounded border p-2 text-sm leading-none"
+            key={service.id}
+          >
+            <span>{service.name}</span>
+            <Badge color="blue">
+              {service.price.toLocaleString("en-US", {
+                style: "currency",
+                currency: "CAD",
+                currencyDisplay: "symbol",
+              })}
+            </Badge>
+          </div>
+        );
+      })}
+    </>
   );
 };
 

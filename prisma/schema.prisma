@@ -24,37 +24,49 @@ enum Status {
     canceled
 }
 
-model Services {
-    id          String   @id @default(cuid())
+model Service {
+    id          String  @id @default(cuid())
     name        String
-    description String   @default("")
+    description String  @default("")
     price       Int
-    Invoice     Invoice? @relation(fields: [invoiceId], references: [id])
     invoiceId   String?
 
     orgId    String
     parentId String?
-    parent   Services?  @relation(name: "childServices", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-    children Services[] @relation(name: "childServices")
+    parent   Service?      @relation(name: "childServices", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    children Service[]     @relation(name: "childServices")
+    invoices InvoiceItem[]
 
     @@index([invoiceId], name: "invoiceId")
     @@index([parentId], name: "parentId")
     @@index([orgId], name: "orgId")
+    @@map("Services")
 }
 
 model Invoice {
     id        String              @id @default(cuid())
     status    Status              @default(draft)
-    services  Services[]
     orgId     String
     total     Int
     dueDate   DateTime
     customers CustomersInvoices[]
+    items     InvoiceItem[]
 
     @@index([orgId], name: "orgId")
     @@index([status], name: "status")
     @@index([dueDate], name: "dueDate")
     @@index([id, status], name: "id_status")
+}
+
+model InvoiceItem {
+    serviceId String
+    service   Service @relation(fields: [serviceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    invoiceId String
+    invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+    @@id([serviceId, invoiceId])
+    @@index([serviceId], name: "serviceId")
+    @@index([invoiceId], name: "invoiceId")
 }
 
 model Customer {
@@ -77,7 +89,6 @@ model Customer {
 }
 
 model CustomersInvoices {
-    // id         String    @id @default(cuid())
     customerId String
     customer   Customer? @relation(fields: [customerId], references: [id])
     invoiceId  String

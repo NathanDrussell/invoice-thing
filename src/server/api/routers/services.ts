@@ -23,7 +23,7 @@ export const serviceRouter = createTRPCRouter({
       })
     )
     .query(({ input, ctx }) => {
-      return ctx.prisma.services.findMany({
+      return ctx.prisma.service.findMany({
         where: {
           name: {
             contains: input.query,
@@ -34,7 +34,7 @@ export const serviceRouter = createTRPCRouter({
     }),
 
   list: protectedProcedure.query(({ ctx }) => {
-    return ctx.prisma.services.findMany({
+    return ctx.prisma.service.findMany({
       where: { parent: null, orgId: ctx.auth.orgId },
       include: {
         children: true,
@@ -45,7 +45,7 @@ export const serviceRouter = createTRPCRouter({
   byIds: protectedProcedure
     .input(z.string().cuid().array())
     .query(({ input, ctx }) => {
-      return ctx.prisma.services.findMany({
+      return ctx.prisma.service.findMany({
         where: { id: { in: input }, orgId: ctx.auth.orgId },
         include: {
           children: true,
@@ -56,7 +56,7 @@ export const serviceRouter = createTRPCRouter({
   create: protectedProcedure
     .input(createServiceSchema)
     .mutation(({ input, ctx }) => {
-      return ctx.prisma.services.create({
+      return ctx.prisma.service.create({
         data: {
           orgId: ctx.auth.orgId,
           name: input.name,

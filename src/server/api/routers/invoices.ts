@@ -21,7 +21,7 @@ export const invoiceRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const {
         _sum: { price: total },
-      } = await ctx.prisma.services.aggregate({
+      } = await ctx.prisma.service.aggregate({
         where: { id: { in: input.serviceIds } },
         _sum: {
           price: true,
@@ -33,9 +33,20 @@ export const invoiceRouter = createTRPCRouter({
           orgId: ctx.auth.orgId,
           dueDate: input.dueDate,
           total,
-          services: {
-            connect: input.serviceIds.map((id) => ({ id })),
+          items: {
+            createMany: {
+              data: input.serviceIds.map((serviceId) => ({ serviceId })),
+            },
           },
+          customers: {
+            create: input.customerIds.map((customerId) => ({
+              customerId,
+            })),
+          },
+
+          // services: {
+          //   connect: input.serviceIds.map((id) => ({ id })),
+          // },
         },
       });
     }),
@@ -63,11 +74,38 @@ export const invoiceRouter = createTRPCRouter({
       });
     }),
 
+  addService: protectedProcedure
+    .input(
+      z.object({
+        invoiceId: z.string().cuid(),
+        serviceId: z.string().cuid(),
+      })
+    )
+    .mutation(({ input, ctx }) => {
+      return ctx.prisma.invoiceItem.upsert({
+        where: {
+          serviceId_invoiceId: {
+            serviceId: input.serviceId,
+            invoiceId: input.invoiceId,
+          },
+        },
+        create: {
+          invoiceId: input.invoiceId,
+          serviceId: input.serviceId,
+        },
+        update: {},
+      });
+    }),
+
   list: protectedProcedure.query(({ ctx }) => {
     return ctx.prisma.invoice.findMany({
       where: { status: { not: "deleted" }, orgId: ctx.auth.orgId },
       include: {
-        services: true,
+        items: {
+          include: {
+            service: true,
+          },
+        },
         customers: {
           select: {
             customer: {

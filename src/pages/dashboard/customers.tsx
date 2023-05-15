@@ -189,6 +189,48 @@ export const CustomerAvatar: React.FC<{ name: string; className?: string }> = ({
   );
 };
 
+
+export const CustomersList: React.FC<{
+  customerIds: string[];
+  setCustomerIds: React.Dispatch<React.SetStateAction<string[]>>;
+
+  afterNewCustomer?: (customerId: string) => void;
+}> = ({ customerIds, setCustomerIds, afterNewCustomer }) => {
+
+  const onNewContact = (customerId: string) => {
+    setCustomerIds((ids) => [...ids, customerId]);
+    afterNewCustomer?.(customerId);
+  };
+
+  const customersQuery = api.customer.byIds.useQuery(customerIds, {
+    enabled: customerIds.length > 0,
+    initialData: [],
+  });
+
+  return (
+    <>
+      <CustomersAutocomplete onSelect={onNewContact} />
+      {customersQuery.data?.map((customer) => {
+        return (
+          <div
+            className="mt-2 flex min-w-0 items-center gap-2 overflow-hidden rounded border p-2 text-sm leading-none"
+            key={customer?.id}
+          >
+            <div className="w-fit flex-shrink-0">
+              <CustomerAvatar name={customer?.name || ""} />
+            </div>
+            <div className="relative flex min-w-0 flex-col">
+              <strong>{customer?.name}</strong>
+              {/* TODO: Fix overflow not using ellipsis. Ideally have a hover expand to show full text */}
+              {customer?.email || customer?.phone}
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+};
+
 const Customers: NextPage = () => {
   const { data: customers } = useCustomers();
   const [, setDashboardState] = useDashboardState();
