@@ -3,6 +3,7 @@ import { atom, useAtom } from "jotai";
 import { NextPage } from "next";
 import React, { SetStateAction, useEffect } from "react";
 import { Badge, Button, Color, Input, Modal } from "~/components/base";
+import { Calendar } from "~/components/calendar";
 import {
   Dashboard,
   TheDashboardSidebar,
@@ -124,7 +125,7 @@ export const NewInvoiceModal: React.FC<{ seed?: Invoice }> = ({ seed }) => {
 
   return (
     <Modal
-      title="Add Service"
+      title="Create a new invoice"
       onClose={onClose}
       actions={
         <div className="flex gap-2">
@@ -137,27 +138,23 @@ export const NewInvoiceModal: React.FC<{ seed?: Invoice }> = ({ seed }) => {
         </div>
       }
     >
-      <div className="flex gap-2">
-        <Input
-          value={dueDate.toISOString().split("T")[0]}
-          onChange={(e) => setDueDate(e.target.valueAsDate!)}
-          label="Due date"
-          wrapperClassName="w-full"
-          type="date"
-        />
-      </div>
-
       <div className="mt-2 flex gap-4">
-        <div className="w-64 flex-shrink-0">
+        <div className="w-fit flex-shrink-0">
+          <strong className="text-xs">Due date</strong>
+          <Calendar
+            mode="single"
+            selected={dueDate}
+            onSelect={(e) => setDueDate(e!)}
+          />
+        </div>
+
+        <div className="w-full">
           <strong className="text-xs">Customers</strong>
           <CustomersList
             customerIds={customerIds}
             setCustomerIds={setCustomerIds}
             afterNewCustomer={afterNewCustomer}
           />
-        </div>
-
-        <div className="w-full">
           <strong className="text-xs">Services</strong>
 
           <ServicesList
