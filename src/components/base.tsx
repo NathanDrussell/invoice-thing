@@ -134,7 +134,7 @@ export const Badge: React.FC<{
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset",
+        "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset overflow-hidden whitespace-nowrap text-ellipsis",
         colorClasses[color]
       )}
     >

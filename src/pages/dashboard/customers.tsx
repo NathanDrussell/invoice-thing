@@ -1,12 +1,7 @@
 import { Combobox } from "@headlessui/react";
 import { NextPage } from "next";
 import React, { Fragment, useEffect, useRef, useState } from "react";
-import {
-  Button,
-  Input,
-  Modal,
-  inputClassName
-} from "~/components/base";
+import { Button, Input, Modal, inputClassName } from "~/components/base";
 import {
   Dashboard,
   TheDashboardSidebar,
@@ -29,24 +24,20 @@ export const useCustomerActions = () => {
     addToInvoice,
   };
 };
-const useCustomers = () => api.customer.list.useQuery(undefined);
 
-export const NewCustomerModals: React.FC<{}> = ({}) => {
+export const useCustomers = () => api.customer.list.useQuery(undefined);
+
+export const NewCustomerModals: React.FC<{
+  onClose: (id?: string) => void;
+}> = ({ onClose }) => {
   const [, setDashboardState] = useDashboardState();
   const { create } = useCustomerActions();
 
   const [name, setName] = React.useState<CreateCustomer["name"]>("");
   const [email, setEmail] = React.useState<CreateCustomer["email"]>("");
 
-  const onClose = () => {
-    setDashboardState((state) => ({
-      ...state,
-      modals: state.modals.slice(0, state.modals.length - 1),
-    }));
-  };
-
   const doCreateCustomer = () => {
-    create.mutateAsync({ name, email }).then(() => onClose());
+    create.mutateAsync({ name, email }).then(({ id }) => onClose(id));
   };
 
   return (
@@ -55,7 +46,7 @@ export const NewCustomerModals: React.FC<{}> = ({}) => {
       onClose={onClose}
       actions={
         <div className="flex gap-2">
-          <Button label="Cancel" onClick={onClose} />
+          <Button label="Cancel" onClick={() => onClose(null!)} />
           <Button label="Save" onClick={doCreateCustomer} />
         </div>
       }
@@ -87,6 +78,7 @@ export const CustomersAutocomplete = ({
   const lastSelectedService = useRef<string>("");
   const [selectedCustomer, setSelectedCustomer] = useState<string | Symbol>("");
   const [query, setQuery] = useState("");
+  const [, setDashboardState] = useDashboardState();
 
   const { data: customers } = api.customer.ac.useQuery(
     { query },
@@ -95,10 +87,26 @@ export const CustomersAutocomplete = ({
     }
   );
 
+  const onClose = (id?: string) => {
+    if (id) setSelectedCustomer(id);
+
+    setDashboardState((state) => ({
+      ...state,
+      modals: state.modals.slice(0, state.modals.length - 1),
+    }));
+  };
+
   useEffect(() => {
     if (!selectedCustomer) return;
     if (selectedCustomer === Symbol.for("new")) {
       // open modal
+      setDashboardState((state) => ({
+        ...state,
+        modals: [
+          ...state.modals,
+          <NewCustomerModals onClose={onClose} key={state.modals.length} />,
+        ],
+      }));
     } else {
       if (selectedCustomer !== lastSelectedService.current) {
         lastSelectedService.current = selectedCustomer as string;
@@ -138,8 +146,17 @@ export const CustomersAutocomplete = ({
           </Combobox.Option>
         ))}
         {customers?.length === 0 && (
-          <Combobox.Option value={Symbol.for("new")} className="w-full p-2">
-            Add a new service
+          <Combobox.Option value={Symbol.for("new")} as={Fragment}>
+            {({ active, selected }) => (
+              <li
+                className={cn(
+                  "flex w-full items-center gap-2 p-2 capitalize",
+                  active ? "bg-slate-100" : ""
+                )}
+              >
+                Add new customer
+              </li>
+            )}
           </Combobox.Option>
         )}
       </Combobox.Options>
@@ -147,7 +164,10 @@ export const CustomersAutocomplete = ({
   );
 };
 
-export const CustomerAvatar: React.FC<{ name: string }> = ({ name }) => {
+export const CustomerAvatar: React.FC<{ name: string; className?: string }> = ({
+  name,
+  className,
+}) => {
   const hsl = useSeededHslColor(name, "90%");
   const hslText = useSeededHslColor(name, "30%");
   const [initials] = React.useState(() => {
@@ -158,7 +178,10 @@ export const CustomerAvatar: React.FC<{ name: string }> = ({ name }) => {
 
   return (
     <div
-      className="flex h-8 w-8 items-center justify-center rounded-full"
+      className={cn(
+        "flex h-8 w-8 items-center justify-center rounded-full",
+        className
+      )}
       style={{ background: hsl, color: hslText }}
     >
       {initials}
@@ -170,13 +193,19 @@ const Customers: NextPage = () => {
   const { data: customers } = useCustomers();
   const [, setDashboardState] = useDashboardState();
   useSetDashboardTitle("Customers");
+  const onClose = () => {
+    setDashboardState((state) => ({
+      ...state,
+      modals: state.modals.slice(0, state.modals.length - 1),
+    }));
+  };
 
   const openModal = () => {
     setDashboardState((state) => ({
       ...state,
       modals: [
         ...state.modals,
-        <NewCustomerModals key={state.modals.length} />,
+        <NewCustomerModals onClose={onClose} key={state.modals.length} />,
       ],
     }));
   };

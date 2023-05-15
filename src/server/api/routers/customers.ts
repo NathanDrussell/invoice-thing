@@ -33,6 +33,14 @@ export const customerRouter = createTRPCRouter({
     });
   }),
 
+  byIds: protectedProcedure
+    .input(z.array(z.string().cuid()))
+    .query(({ ctx, input }) => {
+      return ctx.prisma.customer.findMany({
+        where: { orgId: ctx.auth.orgId, id: { in: input } },
+      });
+    }),
+
   ac: protectedProcedure
     .input(
       z.object({

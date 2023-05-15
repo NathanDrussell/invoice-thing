@@ -2,13 +2,7 @@ import { formatRelative } from "date-fns";
 import { atom, useAtom } from "jotai";
 import { NextPage } from "next";
 import React from "react";
-import {
-  Badge,
-  Button,
-  Color,
-  Input,
-  Modal
-} from "~/components/base";
+import { Badge, Button, Color, Input, Modal } from "~/components/base";
 import {
   Dashboard,
   TheDashboardSidebar,
@@ -57,6 +51,7 @@ const useInvoices = () => api.invoice.list.useQuery(undefined);
 
 export const useInvoiceActions = () => {
   const create = api.invoice.create.useMutation();
+  const addCustomer = api.invoice.addCustomer.useMutation();
   const send = api.invoice.send.useMutation();
   const pay = api.invoice.pay.useMutation();
   const cancel = api.invoice.cancel.useMutation();
@@ -64,6 +59,7 @@ export const useInvoiceActions = () => {
 
   return {
     create,
+    addCustomer,
     send,
     pay,
     cancel,
@@ -71,23 +67,29 @@ export const useInvoiceActions = () => {
   };
 };
 
-export const NewInvoiceModal: React.FC<{}> = ({}) => {
+export const NewInvoiceModal: React.FC<{ seed?: Invoice }> = ({ seed }) => {
   const [, setDashboardState] = useDashboardState();
   const invoiceActions = useInvoiceActions();
 
   const [dueDate, setDueDate] = React.useState<CreateInvoice["dueDate"]>(
-    new Date()
+    seed?.dueDate || new Date()
   );
   const [serviceIds, setServiceIds] = React.useState<
     CreateInvoice["serviceIds"]
-  >([]);
+  >(seed?.services.map((s) => s.id) || []);
 
   const [customerIds, setCustomerIds] = React.useState<
     CreateInvoice["customerIds"]
-  >([]);
+  >(seed?.customers.map((c) => c.customer!.id) || []);
 
-  const servicesQuery = api.service.ids.useQuery(serviceIds.filter(Boolean), {
+  const servicesQuery = api.service.byIds.useQuery(serviceIds.filter(Boolean), {
     enabled: serviceIds.length > 0,
+    initialData: seed?.services || [],
+  });
+
+  const customersQuery = api.customer.byIds.useQuery(customerIds, {
+    enabled: customerIds.length > 0,
+    initialData: seed?.customers || [],
   });
 
   const onClose = () => {
@@ -105,14 +107,29 @@ export const NewInvoiceModal: React.FC<{}> = ({}) => {
     });
   };
 
+  const onNewContact = (customerId: string) => {
+    setCustomerIds((ids) => [...ids, customerId]);
+
+    if (seed) {
+      invoiceActions.addCustomer.mutateAsync({
+        invoiceId: seed.id,
+        customerId,
+      });
+    }
+  };
+
   return (
     <Modal
       title="Add Service"
       onClose={onClose}
       actions={
         <div className="flex gap-2">
-          <Button label="Cancel" onClick={onClose} />
-          <Button label="Save" onClick={doCreateInvoice} />
+          {!seed && (
+            <>
+              <Button label="Cancel" onClick={onClose} />
+              <Button label="Save" onClick={doCreateInvoice} />
+            </>
+          )}
         </div>
       }
     >
@@ -126,18 +143,53 @@ export const NewInvoiceModal: React.FC<{}> = ({}) => {
         />
       </div>
 
-      <ServicesAutocomplete
-        onSelect={(id) => setServiceIds((ids) => [...ids, id])}
-      />
+      <div className="mt-2 flex gap-4">
+        <div className="w-64 flex-shrink-0">
+          <strong className="text-xs">Customers</strong>
+          <CustomersAutocomplete onSelect={onNewContact} />
+          {customersQuery.data?.map((customer) => {
+            return (
+              <div
+                className="mt-2 flex min-w-0 items-center gap-2 overflow-hidden rounded border p-2 text-sm leading-none"
+                key={customer?.id}
+              >
+                <div className="w-fit flex-shrink-0">
+                  <CustomerAvatar name={customer?.name || ""} />
+                </div>
+                <div className="relative flex min-w-0 flex-col">
+                  <strong>{customer?.name}</strong>
+                  {/* TODO: Fix overflow not using ellipsis. Ideally have a hover expand to show full text */}
+                  {customer?.email || customer?.phone}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-      <CustomersAutocomplete
-        onSelect={(id) => setCustomerIds((ids) => [...ids, id])}
-      />
-
-      {servicesQuery.data?.map((service) => {
-        return <div key={service.id}>{service.name}</div>;
-      })}
-
+        <div className="w-full">
+          <strong className="text-xs">Services</strong>
+          <ServicesAutocomplete
+            onSelect={(id) => setServiceIds((ids) => [...ids, id])}
+          />
+          {servicesQuery.data?.map((service) => {
+            return (
+              <div
+                className="mt-2 flex items-center justify-between rounded border p-2 text-sm leading-none"
+                key={service.id}
+              >
+                <span>{service.name}</span>
+                <Badge color="blue">
+                  {service.price.toLocaleString("en-US", {
+                    style: "currency",
+                    currency: "CAD",
+                    currencyDisplay: "symbol",
+                  })}
+                </Badge>
+              </div>
+            );
+          })}
+        </div>
+      </div>
       {/* <Textarea
         label="Description"
         value={description}
@@ -148,23 +200,33 @@ export const NewInvoiceModal: React.FC<{}> = ({}) => {
   );
 };
 
+const useInvoiceModal = () => {
+  const [, setDashboardState] = useDashboardState();
+
+  const openModal = (seed?: Invoice) => {
+    setDashboardState((state) => ({
+      ...state,
+      modals: [
+        ...state.modals,
+        <NewInvoiceModal seed={seed} key={state.modals.length} />,
+      ],
+    }));
+  };
+
+  return openModal;
+};
+
 const Invoices: NextPage = () => {
   const { data: invoices } = useInvoices();
   const [, setDashboardState] = useDashboardState();
   const invoiceActions = useInvoiceActions();
   useSetDashboardTitle("Invoices");
   const ps = useInvoicePageState();
+  const openModal = useInvoiceModal();
 
   //   useEffect(() => {
   //     setDashboardState((state) => ({ ...state, title: "Invoices" }));
   //   }, []);
-
-  const openModal = () => {
-    setDashboardState((state) => ({
-      ...state,
-      modals: [...state.modals, <NewInvoiceModal key={state.modals.length} />],
-    }));
-  };
 
   return (
     <Dashboard
@@ -210,16 +272,29 @@ const Invoices: NextPage = () => {
           } as Record<Invoice["status"], Color>;
 
           return (
-            <div onClick={() => ps.toggle(invoice.id)}>
+            <div key={invoice.id} onClick={() => ps.toggle(invoice.id)}>
               <div className="flex border-b">
-                <div key={invoice.id} className="flex w-fit gap-2 p-2">
+                <div className="flex w-fit gap-2 p-2">
                   <div className="flex w-fit items-center gap-2">
                     <input
                       type="checkbox"
                       checked={ps.selectedIds.includes(invoice.id)}
+                      onChange={() =>
+                        setDashboardState((state) => ({ ...state }))
+                      }
                       name=""
                       id=""
                     />
+                    <div className="flex items-center -space-x-4 w-20">
+                      {/* {JSON.stringify(invoice.customers)} */}
+                      {invoice.customers.map(({ customer }, i) => (
+                        <CustomerAvatar
+                          className="shadow-sm ring-2 ring-neutral-50 flex-shrink-0"
+                          key={customer?.id || i}
+                          name={customer?.name || ""}
+                        />
+                      ))}
+                    </div>
                     <strong>{invoice.id}</strong>
                   </div>
                   {invoice.status === "sent" && (
@@ -237,14 +312,6 @@ const Invoices: NextPage = () => {
                   )}
                 </div>
                 <div className="ml-auto"></div>
-                <div className="flex -space-x-2">
-                  {invoice.customers.map(({ customer }, i) => (
-                    <CustomerAvatar
-                      key={customer?.id || i}
-                      name={customer?.name || ""}
-                    />
-                  ))}
-                </div>
                 <div className="mr-8 flex max-w-md flex-wrap items-center gap-1 py-2 text-xs">
                   {invoice.services
                     ?.map((service) => service.name)
@@ -272,7 +339,10 @@ const Invoices: NextPage = () => {
                     </Badge>
                   )}
                 </div>
-                <button className="flex items-center gap-2 border-b p-2 pr-4 font-semibold text-blue-600 last-of-type:border-b-0  hover:bg-slate-100 focus:ring-1 active:ring-2">
+                <button
+                  onClick={() => openModal(invoice)}
+                  className="flex items-center gap-2 border-b p-2 pr-4 font-semibold text-blue-600 last-of-type:border-b-0  hover:bg-slate-100 focus:ring-1 active:ring-2"
+                >
                   <Icons.Pencil />
                   Edit
                 </button>

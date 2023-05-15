@@ -42,7 +42,7 @@ export const serviceRouter = createTRPCRouter({
     });
   }),
 
-  ids: protectedProcedure
+  byIds: protectedProcedure
     .input(z.string().cuid().array())
     .query(({ input, ctx }) => {
       return ctx.prisma.services.findMany({

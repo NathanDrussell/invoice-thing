@@ -40,6 +40,29 @@ export const invoiceRouter = createTRPCRouter({
       });
     }),
 
+  addCustomer: protectedProcedure
+    .input(
+      z.object({
+        invoiceId: z.string().cuid(),
+        customerId: z.string().cuid(),
+      })
+    )
+    .mutation(({ input, ctx }) => {
+      return ctx.prisma.customersInvoices.upsert({
+        where: {
+          customerId_invoiceId: {
+            customerId: input.customerId,
+            invoiceId: input.invoiceId,
+          },
+        },
+        create: {
+          invoiceId: input.invoiceId,
+          customerId: input.customerId,
+        },
+        update: {},
+      });
+    }),
+
   list: protectedProcedure.query(({ ctx }) => {
     return ctx.prisma.invoice.findMany({
       where: { status: { not: "deleted" }, orgId: ctx.auth.orgId },
