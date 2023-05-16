@@ -43,7 +43,7 @@ function Calendar({
         ),
         day_selected:
           "border-2 border-red-600 text-neutral-700 hover:text-neutral-900 focus:text-black rounded before:z-[950] before:content-['Due'] relative before:absolute before:top-0 before:left-0 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-[-30deg] before:font-[Caveat] before:font-bold before:text-red-600 before:text-lg before:bg-white before:pr-1 before:rounded before:leading-none",
-        day_today: "bg-accent text-accent-foreground",
+        day_today: "bg-accent text-accent-foreground border before:z-[950] before:content-['Today'] relative before:absolute before:top-0 before:left-0 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-[-30deg] before:font-[Caveat] before:font-bold before:text-neutral-600 before:text-lg before:bg-white before:rounded before:leading-none",
         day_outside: "text-muted-foreground opacity-50",
         day_disabled: "text-muted-foreground opacity-50",
         day_range_middle:
