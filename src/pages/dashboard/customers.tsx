@@ -18,10 +18,12 @@ type CreateCustomer = RouterInputs["customer"]["create"];
 export const useCustomerActions = () => {
   const create = api.customer.create.useMutation();
   const addToInvoice = api.customer.addToInvoice.useMutation();
+  const seed = api.customer.seed.useMutation();
 
   return {
     create,
     addToInvoice,
+    seed,
   };
 };
 
@@ -173,7 +175,7 @@ export const CustomerAvatar: React.FC<{ name: string; className?: string }> = ({
   const [initials] = React.useState(() => {
     const [first, last] = name.split(" ");
 
-    return `${first?.[0] || ''}${last?.[0] || ''}`.toUpperCase();
+    return `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase();
   });
 
   return (
@@ -189,17 +191,26 @@ export const CustomerAvatar: React.FC<{ name: string; className?: string }> = ({
   );
 };
 
-
 export const CustomersList: React.FC<{
   customerIds: string[];
   setCustomerIds: React.Dispatch<React.SetStateAction<string[]>>;
 
   afterNewCustomer?: (customerId: string) => void;
-}> = ({ customerIds, setCustomerIds, afterNewCustomer }) => {
-
+  afterRemoveCustomer?: (customerId: string) => void;
+}> = ({
+  customerIds,
+  setCustomerIds,
+  afterNewCustomer,
+  afterRemoveCustomer,
+}) => {
   const onNewContact = (customerId: string) => {
     setCustomerIds((ids) => [...ids, customerId]);
     afterNewCustomer?.(customerId);
+  };
+
+  const onRemoveContact = (customerId: string) => {
+    setCustomerIds((ids) => ids.filter((id) => id !== customerId));
+    afterRemoveCustomer?.(customerId);
   };
 
   const customersQuery = api.customer.byIds.useQuery(customerIds, {
@@ -224,6 +235,13 @@ export const CustomersList: React.FC<{
               {/* TODO: Fix overflow not using ellipsis. Ideally have a hover expand to show full text */}
               {customer?.email || customer?.phone}
             </div>
+
+            <button
+              onClick={() => onRemoveContact(customer.id)}
+              className="ml-auto flex h-8 w-8 items-center justify-center rounded text-red-800 hover:bg-red-100"
+            >
+              <Icons.X></Icons.X>
+            </button>
           </div>
         );
       })}
@@ -234,6 +252,7 @@ export const CustomersList: React.FC<{
 const Customers: NextPage = () => {
   const { data: customers } = useCustomers();
   const [, setDashboardState] = useDashboardState();
+  const customerActions = useCustomerActions();
   useSetDashboardTitle("Customers");
   const onClose = () => {
     setDashboardState((state) => ({
@@ -260,6 +279,11 @@ const Customers: NextPage = () => {
             onClick={() => openModal()}
             icon={<Icons.Plus className="text-black" />}
             label="ADD"
+          />
+
+          <Button
+            onClick={() => customerActions.seed.mutate()}
+            label="Seed customer"
           />
         </div>
       }

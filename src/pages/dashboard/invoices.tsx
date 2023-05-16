@@ -1,4 +1,4 @@
-import { formatRelative } from "date-fns";
+import { differenceInCalendarDays, formatRelative } from "date-fns";
 import { atom, useAtom } from "jotai";
 import { NextPage } from "next";
 import React, { SetStateAction, useEffect } from "react";
@@ -57,7 +57,9 @@ const useInvoices = () => api.invoice.list.useQuery(undefined);
 export const useInvoiceActions = () => {
   const create = api.invoice.create.useMutation();
   const addCustomer = api.invoice.addCustomer.useMutation();
+  const removeCustomer = api.invoice.removeCustomer.useMutation();
   const addService = api.invoice.addService.useMutation();
+  const removeService = api.invoice.removeService.useMutation();
 
   const send = api.invoice.send.useMutation();
   const pay = api.invoice.pay.useMutation();
@@ -67,7 +69,9 @@ export const useInvoiceActions = () => {
   return {
     create,
     addCustomer,
+    removeCustomer,
     addService,
+    removeService,
     send,
     pay,
     cancel,
@@ -92,6 +96,7 @@ export const NewInvoiceModal: React.FC<{ seed?: Invoice }> = ({ seed }) => {
   >(seed?.customers.map((c) => c.customer!.id) || []);
 
   const onClose = () => {
+    utils.invoice.list.invalidate();
     setDashboardState((state) => ({
       ...state,
       modals: state.modals.slice(0, state.modals.length - 1),
@@ -129,6 +134,28 @@ export const NewInvoiceModal: React.FC<{ seed?: Invoice }> = ({ seed }) => {
     });
   };
 
+  const afterRemoveCustomer = (customerId: string) => {
+    if (!seed) return;
+
+    invoiceActions.removeCustomer.mutateAsync({
+      invoiceId: seed.id,
+      customerId,
+    });
+  };
+
+  const afterRemoveService = (serviceId: string) => {
+    if (!seed) return;
+
+    invoiceActions.removeService.mutateAsync({
+      invoiceId: seed.id,
+      serviceId,
+    });
+  };
+
+  const relativeFormmatter = new Intl.RelativeTimeFormat("en-US", {
+    style: "short",
+  });
+
   return (
     <Modal
       title="Create a new invoice"
@@ -146,7 +173,13 @@ export const NewInvoiceModal: React.FC<{ seed?: Invoice }> = ({ seed }) => {
     >
       <div className="mt-2 flex gap-4">
         <div className="w-fit flex-shrink-0">
-          <strong className="text-xs">Due date</strong>
+          <div className="flex items-center justify-between text-xs">
+            <strong>Due date</strong>
+            {relativeFormmatter.format(
+              differenceInCalendarDays(dueDate, new Date()),
+              "days"
+            )}
+          </div>
           <Calendar
             mode="single"
             selected={dueDate}
@@ -160,6 +193,7 @@ export const NewInvoiceModal: React.FC<{ seed?: Invoice }> = ({ seed }) => {
             customerIds={customerIds}
             setCustomerIds={setCustomerIds}
             afterNewCustomer={afterNewCustomer}
+            afterRemoveCustomer={afterRemoveCustomer}
           />
           <strong className="text-xs">Services</strong>
 
@@ -167,6 +201,7 @@ export const NewInvoiceModal: React.FC<{ seed?: Invoice }> = ({ seed }) => {
             serviceIds={serviceIds}
             setServiceIds={setServiceIds}
             afterNewService={afterNewService}
+            afterRemoveService={afterRemoveService}
           />
         </div>
       </div>
@@ -257,7 +292,7 @@ const Invoices: NextPage = () => {
           return (
             <div key={invoice.id} onClick={() => ps.toggle(invoice.id)}>
               <div className="flex border-b">
-                <div className="flex w-fit gap-2 p-2">
+                <div className="flex w-fit items-center gap-2 p-2">
                   <div className="flex w-fit items-center gap-2">
                     <input
                       type="checkbox"
@@ -280,17 +315,12 @@ const Invoices: NextPage = () => {
                     </div>
                     <strong>{invoice.id}</strong>
                   </div>
+
                   {invoice.status === "sent" && (
                     <Badge
                       color={+invoice.dueDate < +new Date() ? "red" : "gray"}
                     >
-                      due{" "}
-                      {
-                        // invoice.dueDate.toLocaleString("en-US", {
-                        //   numberingSystem: ""
-                        // })
-                        formatRelative(invoice.dueDate, new Date())
-                      }
+                      due {formatRelative(invoice.dueDate, new Date())}
                     </Badge>
                   )}
                 </div>

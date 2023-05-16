@@ -1,4 +1,5 @@
 import { clerkClient } from "@clerk/nextjs";
+import { faker } from "@faker-js/faker";
 import { Status } from "@prisma/client";
 import { TRPCClientError } from "@trpc/client";
 import { z } from "zod";
@@ -90,4 +91,20 @@ export const customerRouter = createTRPCRouter({
           return e;
         });
     }),
+
+  seed: protectedProcedure.mutation(async ({ ctx }) => {
+    await ctx.prisma.customer.create({
+      data: {
+        orgId: ctx.auth.orgId,
+        email: faker.internet.email(),
+        name: faker.person.fullName(),
+        phone: faker.phone.number(),
+        address: faker.location.streetAddress(),
+        city: faker.location.city(),
+        state: faker.location.state(),
+        zip: faker.location.zipCode(),
+        country: faker.location.country(),
+      },
+    });
+  }),
 });

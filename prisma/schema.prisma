@@ -19,11 +19,10 @@ enum Status {
 }
 
 model Service {
-    id          String  @id @default(cuid())
+    id          String @id @default(cuid())
     name        String
-    description String  @default("")
+    description String @default("")
     price       Int
-    invoiceId   String?
 
     orgId    String
     parentId String?
@@ -32,7 +31,6 @@ model Service {
     invoices InvoiceItem[]
     projects ProjectsServices[]
 
-    @@index([invoiceId], name: "invoiceId")
     @@index([parentId], name: "parentId")
     @@index([orgId], name: "orgId")
     @@map("Services")

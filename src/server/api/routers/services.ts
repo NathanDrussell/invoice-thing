@@ -1,9 +1,7 @@
+import { faker } from "@faker-js/faker";
 import { z } from "zod";
 
-import {
-  createTRPCRouter,
-  protectedProcedure
-} from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 const _createServiceSchema = z.object({
   name: z.string().trim(),
@@ -72,4 +70,25 @@ export const serviceRouter = createTRPCRouter({
         },
       });
     }),
+
+  seed: protectedProcedure.mutation(async ({ ctx }) => {
+    const serv = () => ({
+      orgId: ctx.auth.orgId,
+      name: faker.commerce.productName(),
+      description: faker.commerce.productDescription(),
+      price: Math.floor(+faker.commerce.price()),
+    });
+    await ctx.prisma.service.create({
+      data: {
+        ...serv(),
+        children: {
+          createMany: {
+            data: Array.from({
+              length: faker.number.int({ min: 0, max: 4 }),
+            }).map(() => serv()),
+          },
+        },
+      },
+    });
+  }),
 });

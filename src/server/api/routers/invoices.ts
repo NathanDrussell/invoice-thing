@@ -1,5 +1,5 @@
 import { clerkClient } from "@clerk/nextjs";
-import { Status } from "@prisma/client";
+import { Prisma, Status } from "@prisma/client";
 import { TRPCClientError } from "@trpc/client";
 import { z } from "zod";
 
@@ -8,6 +8,17 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
+import { prisma } from "~/server/db";
+
+export const getInvoiceTotal = (invoiceId: string) =>
+  prisma.service
+    .aggregate({
+      where: { invoices: { some: { invoiceId } } },
+      _sum: {
+        price: true,
+      },
+    })
+    .then((r) => r._sum.price || 0);
 
 export const invoiceRouter = createTRPCRouter({
   create: protectedProcedure
@@ -74,6 +85,24 @@ export const invoiceRouter = createTRPCRouter({
       });
     }),
 
+  removeCustomer: protectedProcedure
+    .input(
+      z.object({
+        invoiceId: z.string().cuid(),
+        customerId: z.string().cuid(),
+      })
+    )
+    .mutation(({ input, ctx }) => {
+      return ctx.prisma.customersInvoices.delete({
+        where: {
+          customerId_invoiceId: {
+            customerId: input.customerId,
+            invoiceId: input.invoiceId,
+          },
+        },
+      });
+    }),
+
   addService: protectedProcedure
     .input(
       z.object({
@@ -81,8 +110,8 @@ export const invoiceRouter = createTRPCRouter({
         serviceId: z.string().cuid(),
       })
     )
-    .mutation(({ input, ctx }) => {
-      return ctx.prisma.invoiceItem.upsert({
+    .mutation(async ({ input, ctx }) => {
+      await ctx.prisma.invoiceItem.upsert({
         where: {
           serviceId_invoiceId: {
             serviceId: input.serviceId,
@@ -90,14 +119,50 @@ export const invoiceRouter = createTRPCRouter({
           },
         },
         create: {
-          invoiceId: input.invoiceId,
           serviceId: input.serviceId,
+          invoiceId: input.invoiceId,
         },
         update: {},
       });
+
+      await ctx.prisma.invoice.update({
+        where: { id: input.invoiceId },
+        data: {
+          total: await getInvoiceTotal(input.invoiceId),
+        },
+      });
     }),
 
-  list: protectedProcedure.query(({ ctx }) => {
+  removeService: protectedProcedure
+    .input(
+      z.object({
+        invoiceId: z.string().cuid(),
+        serviceId: z.string().cuid(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      await ctx.prisma.invoiceItem.delete({
+        where: {
+          serviceId_invoiceId: {
+            serviceId: input.serviceId,
+            invoiceId: input.invoiceId,
+          },
+        },
+      });
+
+      const total = await getInvoiceTotal(input.invoiceId);
+
+      console.log({ total });
+
+      await ctx.prisma.invoice.update({
+        where: { id: input.invoiceId },
+        data: {
+          total,
+        },
+      });
+    }),
+
+  list: protectedProcedure.query(async ({ ctx }) => {
     return ctx.prisma.invoice.findMany({
       where: { status: { not: "deleted" }, orgId: ctx.auth.orgId },
       include: {

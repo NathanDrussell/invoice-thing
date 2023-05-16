@@ -30,9 +30,11 @@ import { Icons } from "~/utils/icons";
 
 export const useServiceActions = () => {
   const create = api.service.create.useMutation();
+  const seed = api.service.seed.useMutation();
 
   return {
     create,
+    seed,
   };
 };
 
@@ -117,7 +119,8 @@ export const ServicesList: React.FC<{
   setServiceIds: React.Dispatch<SetStateAction<string[]>>;
 
   afterNewService?: (serviceId: string) => void;
-}> = ({ serviceIds, setServiceIds, afterNewService }) => {
+  afterRemoveService?: (serviceId: string) => void;
+}> = ({ serviceIds, setServiceIds, afterNewService, afterRemoveService }) => {
   const servicesQuery = api.service.byIds.useQuery(serviceIds.filter(Boolean), {
     enabled: serviceIds.length > 0,
   });
@@ -127,16 +130,23 @@ export const ServicesList: React.FC<{
     afterNewService?.(customerId);
   };
 
+  const onRemoveService = (customerId: string) => {
+    setServiceIds((ids) => ids.filter((id) => id !== customerId));
+    afterRemoveService?.(customerId);
+  };
+
   return (
     <>
       <ServicesAutocomplete onSelect={onNewService} />
       {servicesQuery.data?.map((service) => {
         return (
           <div
-            className="mt-2 flex items-center justify-between rounded border p-2 text-sm leading-none"
+            className="mt-2 flex items-center rounded border p-2 text-sm leading-none"
             key={service.id}
           >
             <span>{service.name}</span>
+
+            <div className="ml-auto"></div>
             <Badge color="blue">
               {service.price.toLocaleString("en-US", {
                 style: "currency",
@@ -144,6 +154,13 @@ export const ServicesList: React.FC<{
                 currencyDisplay: "symbol",
               })}
             </Badge>
+
+            <button
+              className="ml-2 flex h-8 w-8 items-center justify-center rounded text-red-800 hover:bg-red-100"
+              onClick={() => onRemoveService(service.id)}
+            >
+              <Icons.X></Icons.X>
+            </button>
           </div>
         );
       })}
@@ -296,6 +313,7 @@ const useServices = () => api.service.list.useQuery(undefined);
 const Services: NextPage = () => {
   const { data: services } = useServices();
   const [, setDashboardState] = useDashboardState();
+  const serviceActions = useServiceActions();
   useSetDashboardTitle("Services");
 
   const openModal = () => {
@@ -315,10 +333,15 @@ const Services: NextPage = () => {
             icon={<Icons.Plus className="text-black" />}
             label="ADD"
           />
+          <Button
+            onClick={() => serviceActions.seed.mutateAsync()}
+            icon={<Icons.Plus className="text-black" />}
+            label="SEED"
+          />
         </div>
       }
     >
-      <div className="h-full w-full overflow-hidden rounded border">
+      <div className="h-full w-full rounded border">
         {services?.map((service) => (
           <div>
             <div className="flex items-center border-b">
@@ -346,7 +369,7 @@ const Services: NextPage = () => {
                 </button>
               </div>
             </div>
-            <div className="border-b bg-neutral-100 pl-4">
+            <div className="border-b bg-neutral-100 pl-8">
               {service?.children.map((child) => (
                 <div className="flex items-center border-b last:border-b-0">
                   <div className="w-fit p-2">
