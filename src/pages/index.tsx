@@ -1,5 +1,4 @@
 import { UserButton } from "@clerk/nextjs";
-import { Services } from "@prisma/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { type NextPage } from "next";
 import Head from "next/head";
@@ -48,8 +47,7 @@ const Home: NextPage = () => {
 
   const addCustomerToInvoice = api.customer.addToInvoice.useMutation();
   const [name, setName] = useState("");
-  const [price, setPrice] = useState<number>(0);
-  const [children, setChildren] = useState<
+  const [price, setPrice] = useState<number>(0); const [children, setChildren] = useState<
     RouterInputs["service"]["create"]["children"]
   >([]);
   const [cName, setCName] = useState("");

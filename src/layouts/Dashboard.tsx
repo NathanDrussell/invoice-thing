@@ -119,7 +119,9 @@ export const Dashboard: React.FC<{
       <header className="sticky top-0 bg-black text-white">
         <div className="container mx-auto flex h-16 items-center">
           <h1 className="text-xl uppercase">invoicething</h1>
-
+          <span className="ml-1 rounded bg-blue-600 p-1 text-xs font-bold leading-none">
+            ALPHA
+          </span>
           <div className="ml-auto">
             <UserButton />
           </div>

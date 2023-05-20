@@ -1,6 +1,7 @@
 import { differenceInCalendarDays, formatRelative } from "date-fns";
 import { atom, useAtom } from "jotai";
 import { NextPage } from "next";
+import Link from "next/link";
 import React, { SetStateAction, useEffect } from "react";
 import { Badge, Button, Color, Input, Modal } from "~/components/base";
 import { Calendar } from "~/components/calendar";
@@ -313,7 +314,9 @@ const Invoices: NextPage = () => {
                         />
                       ))}
                     </div>
+                    <Link href={`/invoice/${invoice.id}/pdf`} target="_blank">
                     <strong>{invoice.id}</strong>
+                    </Link>
                   </div>
 
                   {invoice.status === "sent" && (

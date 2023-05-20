@@ -2,6 +2,7 @@ import { clerkClient } from "@clerk/nextjs";
 import { Prisma, Status } from "@prisma/client";
 import { TRPCClientError } from "@trpc/client";
 import { z } from "zod";
+import { downloadInvoice } from "~/pages/api/pdf/[id]";
 
 import {
   createTRPCRouter,
@@ -58,6 +59,26 @@ export const invoiceRouter = createTRPCRouter({
           // services: {
           //   connect: input.serviceIds.map((id) => ({ id })),
           // },
+        },
+      });
+    }),
+
+  get: publicProcedure
+    .input(z.string().cuid())
+    .query(async ({ input, ctx }) => {
+      return ctx.prisma.invoice.findUnique({
+        where: { id: input },
+        include: {
+          items: {
+            include: {
+              service: true,
+            },
+          },
+          customers: {
+            include: {
+              customer: true,
+            },
+          },
         },
       });
     }),
@@ -191,7 +212,13 @@ export const invoiceRouter = createTRPCRouter({
         invoiceId: z.string().cuid(),
       })
     )
-    .mutation(({ input, ctx }) => {
+    .mutation(async ({ input, ctx }) => {
+      const pdf = await downloadInvoice(input.invoiceId);
+      await ctx.emails.sendInvoice(
+        "https://localhost:3000/public/pay/" + input.invoiceId,
+        pdf
+      );
+
       return ctx.prisma.invoice.updateMany({
         where: { id: input.invoiceId, status: "draft" },
         data: {

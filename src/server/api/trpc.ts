@@ -20,6 +20,7 @@ import type {
 } from "@clerk/nextjs/dist/api";
 import { clerkClient, getAuth } from "@clerk/nextjs/server";
 import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
+import * as emails from "~/server/email";
 
 import { prisma } from "~/server/db";
 
@@ -40,6 +41,7 @@ const createInnerTRPCContext = ({ auth }: AuthContext) => {
   return {
     auth,
     prisma,
+    emails,
   };
 };
 
@@ -98,7 +100,16 @@ export const createTRPCRouter = t.router;
  * guarantee that a user querying is authorized, but you can still access user session data if they
  * are logged in.
  */
-export const publicProcedure = t.procedure;
+
+const log = t.middleware(async ({ next, ctx }) => {
+  console.log("hi");
+
+  return next({
+    ctx,
+  });
+});
+
+export const publicProcedure = t.procedure.use(log);
 
 const isAuthed = t.middleware(async ({ next, ctx }) => {
   if (!ctx.auth.userId || !ctx.auth.orgId) {
