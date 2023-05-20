@@ -56,10 +56,10 @@ const downloadPdf = async (url: URL) => {
     origin: url.origin,
   });
   await page.goto(url.toString(), {
-    waitUntil: "networkidle2",
+    waitUntil: "networkidle0",
   });
+  await page.reload({ waitUntil: "networkidle0" });
   const pdf = await page.pdf({ format: "LETTER", displayHeaderFooter: false });
-  await page.waitForNetworkIdle();
 
   return { pdf, cleanup: () => browser.close() };
 };
