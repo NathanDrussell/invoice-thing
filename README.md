@@ -1,28 +1,22 @@
-# Create T3 App
+# Invoice Thing
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+## What is this thing?
 
-## What's next? How do I make an app with this?
+Invoice thing is invoice management web application I started designing after Theo (@t3dotgg) mentioned how poor QuickBooks experience was.
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+I intended to make this real application, however I realized that as this wasn't a problem space I understood well and that I would be ill equipped to run.
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+Thus I have decided to Open source this project as It was a fun little experiment and allowed for many integrations.
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+Integrations:
 
-## Learn More
+- Clerk.com for auth
+- AWS for file storage, (I tried UploadThing but it didn't fit my use case)
+- PlanetScale for the database, however this is up to the person who deploys
+- ShadCDN for setting up base components
+- SendGrid for sending emails
+- Puppeteer and generating PDFs
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+Upcoming Integration:
+- Stripe to handle payments
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
-
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
-
-## How do I deploy this?
-
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
